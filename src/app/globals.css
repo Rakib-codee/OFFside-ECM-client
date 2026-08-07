@@ -120,6 +120,11 @@ body {
   100% { transform: scaleY(0); transform-origin: bottom; }
 }
 
+@keyframes chip-pop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-14px); }
