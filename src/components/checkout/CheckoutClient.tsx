@@ -10,6 +10,8 @@ import TransitionLink from "@/components/fx/TransitionLink";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { formatPrice } from "@/lib/format";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FLAT_RATE, useCartStore } from "@/lib/store/cart";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXPRESS_SHIPPING_RATE = 15;
@@ -46,6 +48,8 @@ function detectCardType(cardNumber: string): string | null {
 }
 
 export default function CheckoutClient() {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const setQuantity = useCartStore((state) => state.setQuantity);
@@ -79,13 +83,13 @@ export default function CheckoutClient() {
 
   const validateInfo = (): boolean => {
     const nextErrors: Record<string, string> = {};
-    if (!EMAIL_PATTERN.test(info.email.trim())) nextErrors.email = "Enter a valid email";
-    if (!info.firstName.trim()) nextErrors.firstName = "Required";
-    if (!info.lastName.trim()) nextErrors.lastName = "Required";
-    if (!info.address.trim()) nextErrors.address = "Required";
-    if (!info.city.trim()) nextErrors.city = "Required";
-    if (!info.postal.trim()) nextErrors.postal = "Required";
-    if (!info.country.trim()) nextErrors.country = "Required";
+    if (!EMAIL_PATTERN.test(info.email.trim())) nextErrors.email = t("checkout.validEmail");
+    if (!info.firstName.trim()) nextErrors.firstName = t("checkout.required");
+    if (!info.lastName.trim()) nextErrors.lastName = t("checkout.required");
+    if (!info.address.trim()) nextErrors.address = t("checkout.required");
+    if (!info.city.trim()) nextErrors.city = t("checkout.required");
+    if (!info.postal.trim()) nextErrors.postal = t("checkout.required");
+    if (!info.country.trim()) nextErrors.country = t("checkout.required");
     if (Object.keys(nextErrors).length > 0) {
       failValidation(nextErrors);
       return false;
@@ -95,10 +99,10 @@ export default function CheckoutClient() {
 
   const validateCard = (): boolean => {
     const nextErrors: Record<string, string> = {};
-    if (!card.name.trim()) nextErrors.cardName = "Required";
-    if (card.number.replace(/\s/g, "").length < 15) nextErrors.cardNumber = "Enter a valid card number";
+    if (!card.name.trim()) nextErrors.cardName = t("checkout.required");
+    if (card.number.replace(/\s/g, "").length < 15) nextErrors.cardNumber = t("checkout.validCard");
     if (!/^\d{2}\/\d{2}$/.test(card.expiry)) nextErrors.cardExpiry = "MM/YY";
-    if (card.cvc.length < 3) nextErrors.cardCvc = "3–4 digits";
+    if (card.cvc.length < 3) nextErrors.cardCvc = t("checkout.validCvc");
     if (Object.keys(nextErrors).length > 0) {
       failValidation(nextErrors);
       return false;
@@ -136,12 +140,12 @@ export default function CheckoutClient() {
             colors={{ body: "#2a2a2a", sleeve: "#1a1a1a", accent: "#666666", text: "#666666" }}
           />
         </div>
-        <p className="text-lg font-medium">Your cart is empty</p>
+        <p className="text-lg font-medium">{t("cart.empty")}</p>
         <TransitionLink
           href="/shop"
           className="mt-2 rounded-lg bg-cta px-8 py-3 font-medium text-cta-text transition-colors hover:bg-accent hover:text-white"
         >
-          Continue shopping
+          {t("cart.continue")}
         </TransitionLink>
       </div>
     );
@@ -152,12 +156,13 @@ export default function CheckoutClient() {
 
   return (
     <div>
+      <h1 className="mb-8 font-display text-3xl font-semibold md:text-4xl">{t("checkout.title")}</h1>
       <ProgressSteps currentStep={step} />
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[60%_1fr]">
         <div>
           {step === 0 ? (
             <section aria-label="Review cart">
-              <h2 className="mb-6 font-display text-2xl font-semibold">Review your cart</h2>
+              <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.review")}</h2>
               <ul className="mb-8 flex flex-col gap-4">
                 {items.map((item) => (
                   <li key={item.key} className="flex items-center gap-4 rounded-xl border border-line bg-card p-4">
@@ -170,10 +175,10 @@ export default function CheckoutClient() {
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs uppercase tracking-wider text-secondary">{item.team}</p>
-                      <p className="truncate font-medium">{item.name}</p>
+                      <p className="text-xs uppercase tracking-wider text-secondary">{localizedTeamById(item.productId, item.team, locale)}</p>
+                      <p className="truncate font-medium">{localizedNameById(item.productId, item.name, locale)}</p>
                       <p className="text-xs text-muted">
-                        Size {item.size}
+                        {t("cart.size")} {item.size}
                         {item.customName ? ` · ${item.customName}` : ""}
                         {item.customNumber ? ` #${item.customNumber}` : ""}
                       </p>
@@ -190,17 +195,17 @@ export default function CheckoutClient() {
                 ))}
               </ul>
               <button type="button" onClick={() => goToStep(1)} className={continueButtonClass}>
-                Continue to information
+                {t("checkout.contInfo")}
               </button>
             </section>
           ) : null}
 
           {step === 1 ? (
             <section aria-label="Contact and address">
-              <h2 className="mb-6 font-display text-2xl font-semibold">Your information</h2>
+              <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.yourInfo")}</h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FloatingField
-                  label="Email"
+                  label={t("checkout.email")}
                   type="email"
                   autoComplete="email"
                   value={info.email}
@@ -210,7 +215,7 @@ export default function CheckoutClient() {
                   className="sm:col-span-2"
                 />
                 <FloatingField
-                  label="First name"
+                  label={t("checkout.firstName")}
                   autoComplete="given-name"
                   value={info.firstName}
                   onChange={(event) => updateInfo("firstName", event.target.value)}
@@ -218,7 +223,7 @@ export default function CheckoutClient() {
                   errorNonce={errorNonce}
                 />
                 <FloatingField
-                  label="Last name"
+                  label={t("checkout.lastName")}
                   autoComplete="family-name"
                   value={info.lastName}
                   onChange={(event) => updateInfo("lastName", event.target.value)}
@@ -226,7 +231,7 @@ export default function CheckoutClient() {
                   errorNonce={errorNonce}
                 />
                 <FloatingField
-                  label="Address"
+                  label={t("checkout.address")}
                   autoComplete="street-address"
                   value={info.address}
                   onChange={(event) => updateInfo("address", event.target.value)}
@@ -235,7 +240,7 @@ export default function CheckoutClient() {
                   className="sm:col-span-2"
                 />
                 <FloatingField
-                  label="City"
+                  label={t("checkout.city")}
                   autoComplete="address-level2"
                   value={info.city}
                   onChange={(event) => updateInfo("city", event.target.value)}
@@ -243,7 +248,7 @@ export default function CheckoutClient() {
                   errorNonce={errorNonce}
                 />
                 <FloatingField
-                  label="Postal code"
+                  label={t("checkout.postal")}
                   autoComplete="postal-code"
                   value={info.postal}
                   onChange={(event) => updateInfo("postal", event.target.value)}
@@ -251,7 +256,7 @@ export default function CheckoutClient() {
                   errorNonce={errorNonce}
                 />
                 <FloatingField
-                  label="Country"
+                  label={t("checkout.country")}
                   autoComplete="country-name"
                   value={info.country}
                   onChange={(event) => updateInfo("country", event.target.value)}
@@ -266,14 +271,14 @@ export default function CheckoutClient() {
                   onClick={() => goToStep(0)}
                   className="h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-white hover:text-primary"
                 >
-                  Back
+                  {t("checkout.back")}
                 </button>
                 <button
                   type="button"
                   onClick={() => validateInfo() && goToStep(2)}
                   className={continueButtonClass}
                 >
-                  Continue to shipping
+                  {t("checkout.contShipping")}
                 </button>
               </div>
             </section>
@@ -281,20 +286,20 @@ export default function CheckoutClient() {
 
           {step === 2 ? (
             <section aria-label="Shipping method">
-              <h2 className="mb-6 font-display text-2xl font-semibold">Shipping</h2>
-              <div className="flex flex-col gap-3" role="radiogroup" aria-label="Shipping method">
+              <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.shippingTitle")}</h2>
+              <div className="flex flex-col gap-3" role="radiogroup" aria-label={t("checkout.shippingTitle")}>
                 {(
                   [
                     {
                       key: "standard" as const,
-                      title: "Standard",
-                      detail: "4–6 business days",
+                      title: t("checkout.standard"),
+                      detail: t("checkout.standardEta"),
                       cost: standardShipping,
                     },
                     {
                       key: "express" as const,
-                      title: "Express",
-                      detail: "2–3 business days",
+                      title: t("checkout.express"),
+                      detail: t("checkout.expressEta"),
                       cost: EXPRESS_SHIPPING_RATE,
                     },
                   ]
@@ -316,7 +321,7 @@ export default function CheckoutClient() {
                       <span className="block text-sm text-secondary">{option.detail}</span>
                     </span>
                     <span className="font-medium tnum">
-                      {option.cost === 0 ? "Free" : formatPrice(option.cost)}
+                      {option.cost === 0 ? t("cart.free") : formatPrice(option.cost)}
                     </span>
                   </button>
                 ))}
@@ -327,10 +332,10 @@ export default function CheckoutClient() {
                   onClick={() => goToStep(1)}
                   className="h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-white hover:text-primary"
                 >
-                  Back
+                  {t("checkout.back")}
                 </button>
                 <button type="button" onClick={() => goToStep(3)} className={continueButtonClass}>
-                  Continue to payment
+                  {t("checkout.contPayment")}
                 </button>
               </div>
             </section>
@@ -338,7 +343,7 @@ export default function CheckoutClient() {
 
           {step === 3 ? (
             <section aria-label="Payment">
-              <h2 className="mb-6 font-display text-2xl font-semibold">Payment</h2>
+              <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.paymentTitle")}</h2>
               <div className="mb-6 grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -357,12 +362,12 @@ export default function CheckoutClient() {
               </div>
               <div className="mb-6 flex items-center gap-3 text-xs text-muted">
                 <span className="h-px flex-1 bg-line" />
-                or pay with card
+                {t("checkout.orCard")}
                 <span className="h-px flex-1 bg-line" />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FloatingField
-                  label="Name on card"
+                  label={t("checkout.cardName")}
                   autoComplete="cc-name"
                   value={card.name}
                   onChange={(event) => setCard({ ...card, name: event.target.value })}
@@ -372,7 +377,7 @@ export default function CheckoutClient() {
                 />
                 <div className="relative sm:col-span-2">
                   <FloatingField
-                    label="Card number"
+                    label={t("checkout.cardNumber")}
                     inputMode="numeric"
                     autoComplete="cc-number"
                     value={card.number}
@@ -395,7 +400,7 @@ export default function CheckoutClient() {
                   ) : null}
                 </div>
                 <FloatingField
-                  label="Expiry (MM/YY)"
+                  label={t("checkout.expiry")}
                   inputMode="numeric"
                   autoComplete="cc-exp"
                   value={card.expiry}
@@ -409,7 +414,7 @@ export default function CheckoutClient() {
                   errorNonce={errorNonce}
                 />
                 <FloatingField
-                  label="CVC"
+                  label={t("checkout.cvc")}
                   inputMode="numeric"
                   autoComplete="cc-csc"
                   value={card.cvc}
@@ -426,18 +431,18 @@ export default function CheckoutClient() {
                   onClick={() => goToStep(2)}
                   className="h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-white hover:text-primary"
                 >
-                  Back
+                  {t("checkout.back")}
                 </button>
                 <button
                   type="button"
                   onClick={() => validateCard() && placeOrder()}
                   className={continueButtonClass}
                 >
-                  Pay {formatPrice(subtotal + shippingCost)}
+                  {t("checkout.pay")} {formatPrice(subtotal + shippingCost)}
                 </button>
               </div>
               <p className="mt-4 text-center text-xs text-muted">
-                Demo checkout — no real payment is processed.
+                {t("checkout.demo")}
               </p>
             </section>
           ) : null}

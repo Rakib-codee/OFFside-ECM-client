@@ -6,6 +6,8 @@ import AnimatedPrice from "@/components/fx/AnimatedPrice";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/store/cart";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
 
 interface OrderSummaryProps {
   shippingCost: number;
@@ -13,6 +15,8 @@ interface OrderSummaryProps {
 
 /** Sticky summary panel with collapsible items and rolling totals. */
 export default function OrderSummary({ shippingCost }: OrderSummaryProps) {
+  const t = useT();
+  const locale = useLocale();
   const items = useCartStore((state) => state.items);
   const [isExpanded, setIsExpanded] = useState(true);
   const listRef = useRef<HTMLUListElement>(null);
@@ -45,7 +49,7 @@ export default function OrderSummary({ shippingCost }: OrderSummaryProps) {
         className="mb-4 flex w-full items-center justify-between text-left"
       >
         <h2 className="font-display text-lg font-semibold">
-          Order summary ({items.reduce((sum, item) => sum + item.quantity, 0)})
+          {t("checkout.summary")} ({items.reduce((sum, item) => sum + item.quantity, 0)})
         </h2>
         <span
           className={`text-secondary transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
@@ -68,10 +72,10 @@ export default function OrderSummary({ shippingCost }: OrderSummaryProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
-                {item.team} · {item.name}
+                {localizedTeamById(item.productId, item.team, locale)} · {localizedNameById(item.productId, item.name, locale)}
               </p>
               <p className="text-xs text-muted">
-                Size {item.size} × {item.quantity}
+                {t("cart.size")} {item.size} × {item.quantity}
                 {item.customName ? ` · ${item.customName}` : ""}
                 {item.customNumber ? ` #${item.customNumber}` : ""}
               </p>
@@ -83,17 +87,17 @@ export default function OrderSummary({ shippingCost }: OrderSummaryProps) {
 
       <dl className="mt-4 flex flex-col gap-1.5 text-sm">
         <div className="flex justify-between text-secondary">
-          <dt>Subtotal</dt>
+          <dt>{t("cart.subtotal")}</dt>
           <dd>
             <AnimatedPrice value={subtotal} />
           </dd>
         </div>
         <div className="flex justify-between text-secondary">
-          <dt>Shipping</dt>
-          <dd>{shippingCost === 0 ? "Free" : <AnimatedPrice value={shippingCost} />}</dd>
+          <dt>{t("cart.shipping")}</dt>
+          <dd>{shippingCost === 0 ? t("cart.free") : <AnimatedPrice value={shippingCost} />}</dd>
         </div>
         <div className="mt-2 flex justify-between border-t border-line pt-3 text-base font-semibold">
-          <dt>Total</dt>
+          <dt>{t("cart.total")}</dt>
           <dd>
             <AnimatedPrice value={total} />
           </dd>

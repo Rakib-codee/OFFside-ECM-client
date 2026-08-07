@@ -2,12 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import TransitionLink from "@/components/fx/TransitionLink";
+import { useT } from "@/lib/i18n/locale";
 import { selectCount, useCartStore } from "@/lib/store/cart";
 import { useUiStore } from "@/lib/store/ui";
 
 /** Thumb-zone bottom navigation, only rendered on small screens. */
 export default function MobileTabBar() {
   const pathname = usePathname();
+  const t = useT();
   const count = useCartStore(selectCount);
   const openCart = useUiStore((state) => state.openCart);
   const toggleMenu = useUiStore((state) => state.toggleMenu);
@@ -24,17 +26,17 @@ export default function MobileTabBar() {
     >
       <TransitionLink href="/" className={tabClass(pathname === "/")}>
         <HomeIcon />
-        Home
+        {t("nav.home")}
       </TransitionLink>
       <TransitionLink href="/shop" className={tabClass(pathname === "/shop")}>
         <ShirtIcon />
-        Shop
+        {t("nav.shop")}
       </TransitionLink>
       <TransitionLink href="/shop?focus=search" className={tabClass(false)}>
         <SearchIcon />
-        Search
+        {t("nav.search")}
       </TransitionLink>
-      <button type="button" onClick={openCart} className={tabClass(false)} aria-label={`Open cart, ${count} items`}>
+      <button type="button" onClick={openCart} className={tabClass(false)} aria-label={`${t("nav.openCart")} (${count})`}>
         <span className="relative">
           <BagIcon />
           {count > 0 ? (
@@ -43,11 +45,11 @@ export default function MobileTabBar() {
             </span>
           ) : null}
         </span>
-        Cart
+        {t("nav.cart")}
       </button>
-      <button type="button" onClick={toggleMenu} className={tabClass(false)} aria-label="Open menu">
+      <button type="button" onClick={toggleMenu} className={tabClass(false)} aria-label={t("nav.openMenu")}>
         <MenuIcon />
-        Menu
+        {t("nav.menu")}
       </button>
     </nav>
   );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { CUSTOMIZATION_PRICE } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
+import { useT } from "@/lib/i18n/locale";
 
 const DEBOUNCE_MS = 200;
 const MAX_NAME_LENGTH = 12;
@@ -22,6 +23,7 @@ export default function CustomizationFields({
   onNameChange,
   onNumberChange,
 }: CustomizationFieldsProps) {
+  const t = useT();
   const [name, setName] = useState("");
   const [jerseyNumber, setJerseyNumber] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
@@ -58,14 +60,14 @@ export default function CustomizationFields({
     <div>
       <label className="flex cursor-pointer items-center justify-between">
         <span className="text-sm font-medium">
-          Add customization{" "}
+          {t("product.addCustom")}{" "}
           <span className="text-muted">+{formatPrice(CUSTOMIZATION_PRICE)}</span>
         </span>
         <button
           type="button"
           role="switch"
           aria-checked={isEnabled}
-          aria-label="Add name and number customization"
+          aria-label={t("product.addCustom")}
           onClick={() => onToggle(!isEnabled)}
           className={`relative h-7 w-12 rounded-full transition-colors ${
             isEnabled ? "bg-accent" : "bg-line"
@@ -82,18 +84,18 @@ export default function CustomizationFields({
       <div ref={panelRef} className="h-0 overflow-hidden opacity-0">
         <div className="grid grid-cols-2 gap-3 pt-4">
           <label className="flex flex-col gap-1.5 text-xs uppercase tracking-wider text-secondary">
-            Name
+            {t("custom.name")}
             <input
               type="text"
               value={name}
               maxLength={MAX_NAME_LENGTH}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Your name"
+              placeholder={t("custom.namePlaceholder")}
               className="h-12 rounded-lg border border-line bg-elevated px-4 text-base normal-case tracking-normal text-primary placeholder:text-muted focus:border-white focus:outline-none"
             />
           </label>
           <label className="flex flex-col gap-1.5 text-xs uppercase tracking-wider text-secondary">
-            Number
+            {t("custom.number")}
             <input
               type="text"
               inputMode="numeric"

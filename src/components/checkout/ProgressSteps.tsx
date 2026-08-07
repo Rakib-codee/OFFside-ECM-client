@@ -1,6 +1,14 @@
 "use client";
 
-export const CHECKOUT_STEPS = ["Cart", "Information", "Shipping", "Payment"] as const;
+import { useT } from "@/lib/i18n/locale";
+import type { MessageKey } from "@/lib/i18n/dictionary";
+
+export const CHECKOUT_STEPS: MessageKey[] = [
+  "checkout.stepCart",
+  "checkout.stepInfo",
+  "checkout.stepShipping",
+  "checkout.stepPayment",
+];
 
 interface ProgressStepsProps {
   currentStep: number;
@@ -8,13 +16,14 @@ interface ProgressStepsProps {
 
 /** Four-step progress bar with animated connector fills. */
 export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
+  const t = useT();
   return (
-    <ol className="mb-10 flex items-center" aria-label="Checkout progress">
-      {CHECKOUT_STEPS.map((step, index) => {
+    <ol className="mb-10 flex items-center" aria-label={t("checkout.progress")}>
+      {CHECKOUT_STEPS.map((stepKey, index) => {
         const isCompleted = index < currentStep;
         const isActive = index === currentStep;
         return (
-          <li key={step} className={`flex items-center ${index > 0 ? "flex-1" : ""}`}>
+          <li key={stepKey} className={`flex items-center ${index > 0 ? "flex-1" : ""}`}>
             {index > 0 ? (
               <span className="relative mx-2 h-px flex-1 bg-line" aria-hidden="true">
                 <span
@@ -43,7 +52,7 @@ export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
                   isActive ? "font-medium text-primary" : isCompleted ? "text-secondary" : "text-muted"
                 }`}
               >
-                {step}
+                {t(stepKey)}
               </span>
             </span>
           </li>

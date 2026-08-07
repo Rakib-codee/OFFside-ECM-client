@@ -1,11 +1,11 @@
 export const SITE_NAME = "OFFside";
 
 export const NAV_LINKS = [
-  { label: "Shop", href: "/shop" },
-  { label: "Teams", href: "/shop?cat=national" },
-  { label: "New Arrivals", href: "/shop?tag=new" },
-  { label: "Sale", href: "/shop?tag=sale" },
-  { label: "Custom", href: "/#customize" },
+  { labelKey: "nav.shop", href: "/shop" },
+  { labelKey: "nav.teams", href: "/shop?cat=national" },
+  { labelKey: "nav.new", href: "/shop?tag=new" },
+  { labelKey: "nav.sale", href: "/shop?tag=sale" },
+  { labelKey: "nav.custom", href: "/#customize" },
 ] as const;
 
 export const SOCIAL_LINKS = [

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import TransitionLink from "@/components/fx/TransitionLink";
 import { formatPrice } from "@/lib/format";
+import { useLocale, useT } from "@/lib/i18n/locale";
 import { prefersReducedMotion } from "@/lib/motion";
 
 const CONFETTI_COUNT = 50;
@@ -19,22 +20,26 @@ interface StoredOrder {
 
 const EMPTY_SUBSCRIBE = () => () => {};
 
-/** Cached so the snapshot stays stable across renders (client-only value). */
-let cachedDeliveryDate: string | null = null;
-function getDeliveryDateSnapshot(): string {
-  if (cachedDeliveryDate === null) {
+/** Cached per locale so each snapshot stays stable across renders (client-only). */
+const cachedDeliveryDates: Partial<Record<string, string>> = {};
+function deliveryDateSnapshot(localeTag: string): string {
+  if (!cachedDeliveryDates[localeTag]) {
     const estimated = new Date();
     estimated.setDate(estimated.getDate() + DELIVERY_DAYS);
-    cachedDeliveryDate = estimated.toLocaleDateString("en-US", {
+    cachedDeliveryDates[localeTag] = estimated.toLocaleDateString(localeTag, {
       month: "long",
       day: "numeric",
       year: "numeric",
     });
   }
-  return cachedDeliveryDate;
+  return cachedDeliveryDates[localeTag]!;
 }
+const getDeliveryDateEn = () => deliveryDateSnapshot("en-US");
+const getDeliveryDateBn = () => deliveryDateSnapshot("bn-BD");
 
 export default function OrderSuccessPage() {
+  const t = useT();
+  const locale = useLocale();
   const checkRef = useRef<SVGPathElement>(null);
   const circleRef = useRef<SVGCircleElement>(null);
   const confettiRef = useRef<HTMLDivElement>(null);
@@ -45,7 +50,11 @@ export default function OrderSuccessPage() {
     () => sessionStorage.getItem("offside-order"),
     () => null,
   );
-  const deliveryDate = useSyncExternalStore(EMPTY_SUBSCRIBE, getDeliveryDateSnapshot, () => "");
+  const deliveryDate = useSyncExternalStore(
+    EMPTY_SUBSCRIBE,
+    locale === "bn" ? getDeliveryDateBn : getDeliveryDateEn,
+    () => "",
+  );
   const order = useMemo(() => {
     if (!orderRaw) {
       return null;
@@ -105,26 +114,26 @@ export default function OrderSuccessPage() {
         />
       </svg>
 
-      <h1 className="mt-8 font-display text-4xl font-semibold">Order confirmed</h1>
+      <h1 className="mt-8 font-display text-4xl font-semibold">{t("success.title")}</h1>
       <p className="mt-3 text-secondary">
-        Thanks for backing the badge{order?.email ? ` — a receipt is on its way to ${order.email}` : ""}.
+        {t("success.thanks")}{order?.email ? ` — ${t("success.receipt")} ${order.email}` : ""}.
       </p>
 
       <dl className="mt-8 w-full rounded-2xl border border-line bg-card p-6 text-left text-sm">
         <div className="flex justify-between py-1.5">
-          <dt className="text-secondary">Order number</dt>
+          <dt className="text-secondary">{t("success.orderNumber")}</dt>
           <dd className="font-medium tnum">{order?.number ?? "ORD-000000"}</dd>
         </div>
         <div className="flex justify-between py-1.5">
-          <dt className="text-secondary">Items</dt>
+          <dt className="text-secondary">{t("success.items")}</dt>
           <dd className="font-medium tnum">{order?.itemCount ?? "—"}</dd>
         </div>
         <div className="flex justify-between py-1.5">
-          <dt className="text-secondary">Total</dt>
+          <dt className="text-secondary">{t("success.total")}</dt>
           <dd className="font-medium tnum">{order ? formatPrice(order.total) : "—"}</dd>
         </div>
         <div className="flex justify-between py-1.5">
-          <dt className="text-secondary">Estimated delivery</dt>
+          <dt className="text-secondary">{t("success.delivery")}</dt>
           <dd className="font-medium">{deliveryDate}</dd>
         </div>
       </dl>
@@ -133,7 +142,7 @@ export default function OrderSuccessPage() {
         href="/shop"
         className="mt-10 rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95"
       >
-        Continue shopping
+        {t("success.continue")}
       </TransitionLink>
     </main>
   );

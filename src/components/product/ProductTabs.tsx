@@ -3,13 +3,29 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { REVIEWS } from "@/lib/products";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedQuote } from "@/lib/i18n/localize";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 import type { Product } from "@/lib/types";
 
 const TABS = ["Description", "Sizing", "Shipping", "Reviews"] as const;
 type Tab = (typeof TABS)[number];
 
+const TAB_LABEL_KEYS: Record<Tab, MessageKey> = {
+  Description: "tabs.description",
+  Sizing: "tabs.sizing",
+  Shipping: "tabs.shipping",
+  Reviews: "tabs.reviews",
+};
+
 const BODY_TYPES = ["Slim", "Regular", "Athletic"] as const;
 type BodyType = (typeof BODY_TYPES)[number];
+
+const BODY_LABEL_KEYS: Record<BodyType, MessageKey> = {
+  Slim: "tabs.slim",
+  Regular: "tabs.regular",
+  Athletic: "tabs.athletic",
+};
 
 const RECOMMENDED_SIZES: Record<BodyType, string[]> = {
   Slim: ["S", "M"],
@@ -27,6 +43,8 @@ const RATING_BREAKDOWN = [
 ];
 
 export default function ProductTabs({ product }: { product: Product }) {
+  const t = useT();
+  const locale = useLocale();
   const [activeTab, setActiveTab] = useState<Tab>("Description");
   const [bodyType, setBodyType] = useState<BodyType>("Regular");
   const [helpfulVotes, setHelpfulVotes] = useState<Record<number, boolean>>({});
@@ -53,7 +71,7 @@ export default function ProductTabs({ product }: { product: Product }) {
         { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" },
       );
     }
-  }, [activeTab]);
+  }, [activeTab, t]);
 
   return (
     <section className="mt-16" aria-label="Product details">
@@ -72,7 +90,7 @@ export default function ProductTabs({ product }: { product: Product }) {
                 activeTab === tab ? "text-primary" : "text-muted hover:text-secondary"
               }`}
             >
-              {tab}
+              {t(TAB_LABEL_KEYS[tab])}
             </button>
           ))}
         </div>
@@ -84,10 +102,10 @@ export default function ProductTabs({ product }: { product: Product }) {
           <div className="max-w-2xl text-secondary">
             <p>{product.description}</p>
             <ul className="mt-4 list-inside list-disc space-y-1 text-sm">
-              <li>100% recycled performance polyester</li>
-              <li>Sweat-wicking, quick-dry fabric</li>
-              <li>Woven crest, heat-pressed sponsor print</li>
-              <li>Machine wash cold, hang dry</li>
+              <li>{t("tabs.feature1")}</li>
+              <li>{t("tabs.feature2")}</li>
+              <li>{t("tabs.feature3")}</li>
+              <li>{t("tabs.feature4")}</li>
             </ul>
           </div>
         ) : null}
@@ -95,7 +113,7 @@ export default function ProductTabs({ product }: { product: Product }) {
         {activeTab === "Sizing" ? (
           <div className="max-w-2xl">
             <p className="mb-4 text-sm text-secondary">
-              Pick your build — we&apos;ll highlight the best fit.
+              {t("tabs.sizingIntro")}
             </p>
             <div className="mb-6 flex gap-2">
               {BODY_TYPES.map((type) => (
@@ -110,7 +128,7 @@ export default function ProductTabs({ product }: { product: Product }) {
                       : "border-line text-secondary hover:text-primary"
                   }`}
                 >
-                  {type}
+                  {t(BODY_LABEL_KEYS[type])}
                 </button>
               ))}
             </div>
@@ -132,18 +150,18 @@ export default function ProductTabs({ product }: { product: Product }) {
               })}
             </div>
             <p className="mt-4 text-sm text-muted">
-              Recommended for a {bodyType.toLowerCase()} build:{" "}
-              <span className="text-primary">{RECOMMENDED_SIZES[bodyType].join(" or ")}</span>
+              {t("tabs.recommended")}{" "}
+              <span className="text-primary">{RECOMMENDED_SIZES[bodyType].join(" / ")}</span>
             </p>
           </div>
         ) : null}
 
         {activeTab === "Shipping" ? (
           <ul className="max-w-2xl space-y-3 text-sm text-secondary">
-            <li>🚚 Free standard shipping on orders over $150</li>
-            <li>⚡ Express delivery in 2–3 business days</li>
-            <li>🔁 Free returns within 30 days — customized jerseys excluded</li>
-            <li>🌍 Worldwide shipping to 60+ countries</li>
+            <li>{t("tabs.ship1")}</li>
+            <li>{t("tabs.ship2")}</li>
+            <li>{t("tabs.ship3")}</li>
+            <li>{t("tabs.ship4")}</li>
           </ul>
         ) : null}
 
@@ -151,7 +169,7 @@ export default function ProductTabs({ product }: { product: Product }) {
           <div className="grid max-w-4xl gap-10 md:grid-cols-[240px_1fr]">
             <div>
               <p className="mb-1 font-display text-5xl font-semibold tnum">{product.rating}</p>
-              <p className="mb-5 text-sm text-muted">{product.reviewCount} reviews</p>
+              <p className="mb-5 text-sm text-muted">{product.reviewCount} {t("product.reviews")}</p>
               <div className="flex flex-col gap-2">
                 {RATING_BREAKDOWN.map((row) => (
                   <div key={row.stars} className="flex items-center gap-2 text-xs text-secondary">
@@ -174,7 +192,7 @@ export default function ProductTabs({ product }: { product: Product }) {
                     <span className="text-sm font-medium">{review.name}</span>
                     <span className="text-xs text-accent">{"★".repeat(review.rating)}</span>
                   </div>
-                  <p className="mb-3 text-sm text-secondary">“{review.quote}”</p>
+                  <p className="mb-3 text-sm text-secondary">“{localizedQuote(review, locale)}”</p>
                   <button
                     type="button"
                     onClick={() =>
@@ -184,7 +202,7 @@ export default function ProductTabs({ product }: { product: Product }) {
                       helpfulVotes[index] ? "text-success" : "text-muted hover:text-primary"
                     }`}
                   >
-                    {helpfulVotes[index] ? "✓ Marked helpful" : "Helpful?"}
+                    {helpfulVotes[index] ? t("tabs.markedHelpful") : t("tabs.helpful")}
                   </button>
                 </li>
               ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { formatPrice } from "@/lib/format";
+import { useT } from "@/lib/i18n/locale";
 
 interface StickyMobileCtaProps {
   /** The main add-to-cart area — the bar appears once it scrolls out of view. */
@@ -13,6 +14,7 @@ interface StickyMobileCtaProps {
 
 /** Bottom-fixed add-to-cart bar for mobile, sitting above the tab bar. */
 export default function StickyMobileCta({ watchRef, price, disabled, onAdd }: StickyMobileCtaProps) {
+  const t = useT();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function StickyMobileCta({ watchRef, price, disabled, onAdd }: St
           disabled ? "cursor-not-allowed bg-elevated text-muted" : "bg-cta text-cta-text"
         }`}
       >
-        {disabled ? "Select a size" : "Add to cart"}
+        {disabled ? t("product.selectSize") : t("product.addToCart")}
       </button>
     </div>
   );

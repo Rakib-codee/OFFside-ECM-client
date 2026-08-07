@@ -16,7 +16,10 @@ export interface Product {
   id: string;
   slug: string;
   team: string;
+  /** Bangla team name shown when the site language is bn. */
+  teamBn?: string;
   name: string;
+  nameBn?: string;
   category: Category;
   price: number;
   salePrice?: number;
@@ -29,11 +32,13 @@ export interface Product {
   rating: number;
   reviewCount: number;
   description: string;
+  descriptionBn?: string;
   soldOutSizes: Size[];
 }
 
 export interface Review {
   name: string;
   quote: string;
+  quoteBn?: string;
   rating: number;
 }

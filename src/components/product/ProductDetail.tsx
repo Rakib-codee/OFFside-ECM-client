@@ -9,6 +9,8 @@ import SizeSelector from "./SizeSelector";
 import StickyMobileCta from "./StickyMobileCta";
 import { formatPrice } from "@/lib/format";
 import { CUSTOMIZATION_PRICE, getEffectivePrice } from "@/lib/products";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedDescription, localizedName, localizedTeam } from "@/lib/i18n/localize";
 import { useCartStore } from "@/lib/store/cart";
 import { useUiStore } from "@/lib/store/ui";
 import type { Product, Size } from "@/lib/types";
@@ -16,6 +18,8 @@ import type { Product, Size } from "@/lib/types";
 const BACK_VIEW_INDEX = 1;
 
 export default function ProductDetail({ product }: { product: Product }) {
+  const t = useT();
+  const locale = useLocale();
   const [size, setSize] = useState<Size | null>(null);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -83,8 +87,8 @@ export default function ProductDetail({ product }: { product: Product }) {
 
         <div className="flex flex-col gap-6">
           <div>
-            <p className="mb-1 text-sm uppercase tracking-wider text-secondary">{product.team}</p>
-            <h1 className="font-display text-3xl font-medium md:text-4xl">{product.name}</h1>
+            <p className="mb-1 text-sm uppercase tracking-wider text-secondary">{localizedTeam(product, locale)}</p>
+            <h1 className="font-display text-3xl font-medium md:text-4xl">{localizedName(product, locale)}</h1>
           </div>
 
           <p className="text-[28px] font-medium tnum">
@@ -98,7 +102,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             )}
             {isCustomizing ? (
               <span className="ml-2 text-sm text-secondary">
-                +{formatPrice(CUSTOMIZATION_PRICE)} printing
+                +{formatPrice(CUSTOMIZATION_PRICE)} {t("product.printing")}
               </span>
             ) : null}
           </p>
@@ -108,23 +112,23 @@ export default function ProductDetail({ product }: { product: Product }) {
               {"★".repeat(Math.round(product.rating))}
             </span>{" "}
             <span className="text-secondary">
-              {product.rating} · {product.reviewCount} reviews
+              {product.rating} · {product.reviewCount} {t("product.reviews")}
             </span>
           </p>
 
           <div className="text-secondary">
-            <p className={isDescriptionOpen ? "" : "line-clamp-3"}>{product.description}</p>
+            <p className={isDescriptionOpen ? "" : "line-clamp-3"}>{localizedDescription(product, locale)}</p>
             <button
               type="button"
               onClick={() => setIsDescriptionOpen((open) => !open)}
               className="mt-1 text-sm font-medium text-primary underline underline-offset-4"
             >
-              {isDescriptionOpen ? "Read less" : "Read more"}
+              {isDescriptionOpen ? t("product.readLess") : t("product.readMore")}
             </button>
           </div>
 
           {product.altColors ? (
-            <div className="flex items-center gap-3" role="radiogroup" aria-label="Colorway">
+            <div className="flex items-center gap-3" role="radiogroup" aria-label={t("product.colorway")}>
               {(["primary", "alt"] as const).map((key) => {
                 const swatch = key === "alt" ? product.altColors! : product.colors;
                 return (
@@ -146,7 +150,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           ) : null}
 
           <div>
-            <p className="mb-2 text-sm font-medium">Size</p>
+            <p className="mb-2 text-sm font-medium">{t("product.size")}</p>
             <SizeSelector product={product} selected={size} onSelect={setSize} />
           </div>
 
@@ -161,7 +165,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             <AddToCartButton price={unitPrice} disabled={!size} onAdd={handleAdd} />
           </div>
           <p className="text-center text-xs text-muted">
-            Free shipping over $150 · Free 30-day returns
+            {t("product.shipReturns")}
           </p>
         </div>
       </div>

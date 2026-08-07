@@ -1,9 +1,11 @@
 "use client";
 
 import { ALL_SIZES } from "@/lib/products";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedTeamLabel } from "@/lib/i18n/localize";
 import {
   ALL_TEAMS,
-  CATEGORY_LABELS,
+  CATEGORY_LABEL_KEYS,
   PRICE_CEILING,
   type ShopFilters,
 } from "@/lib/shop-filters";
@@ -16,6 +18,8 @@ interface FilterControlsProps {
 
 /** Shared filter form — sidebar on desktop, bottom sheet body on mobile. */
 export default function FilterControls({ filters, onChange }: FilterControlsProps) {
+  const t = useT();
+  const locale = useLocale();
   const toggleTeam = (team: string) => {
     const teams = filters.teams.includes(team)
       ? filters.teams.filter((entry) => entry !== team)
@@ -37,17 +41,17 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
   return (
     <div className="flex flex-col gap-7">
       <fieldset>
-        <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">Category</legend>
+        <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">{t("shop.category")}</legend>
         <div className="flex flex-col gap-1.5">
           <FilterOption
-            label="All"
+            label={t("shop.all")}
             isActive={filters.category === null}
             onClick={() => setCategory(null)}
           />
-          {(Object.keys(CATEGORY_LABELS) as Category[]).map((category) => (
+          {(Object.keys(CATEGORY_LABEL_KEYS) as Category[]).map((category) => (
             <FilterOption
               key={category}
-              label={CATEGORY_LABELS[category]}
+              label={t(CATEGORY_LABEL_KEYS[category])}
               isActive={filters.category === category}
               onClick={() => setCategory(category)}
             />
@@ -56,7 +60,7 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
       </fieldset>
 
       <fieldset>
-        <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">Team</legend>
+        <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">{t("shop.team")}</legend>
         <div className="flex flex-col gap-1.5">
           {ALL_TEAMS.map((team) => (
             <label key={team} className="flex cursor-pointer items-center gap-2 text-sm text-secondary hover:text-primary">
@@ -66,14 +70,14 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
                 onChange={() => toggleTeam(team)}
                 className="h-4 w-4 accent-[#ff3b30]"
               />
-              {team}
+              {localizedTeamLabel(team, locale)}
             </label>
           ))}
         </div>
       </fieldset>
 
       <fieldset>
-        <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">Size</legend>
+        <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">{t("product.size")}</legend>
         <div className="flex flex-wrap gap-2">
           {ALL_SIZES.map((size) => (
             <button
@@ -95,7 +99,7 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
 
       <fieldset>
         <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">
-          Max price: <span className="tnum">${filters.maxPrice}</span>
+          {t("shop.maxPrice")}: <span className="tnum">${filters.maxPrice}</span>
         </legend>
         <input
           type="range"
@@ -105,7 +109,7 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
           value={filters.maxPrice}
           onChange={(event) => onChange({ ...filters, maxPrice: Number(event.target.value) })}
           className="w-full accent-[#ff3b30]"
-          aria-label="Maximum price"
+          aria-label={t("shop.maxPrice")}
         />
       </fieldset>
     </div>

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import gsap from "gsap";
 import { ALL_SIZES } from "@/lib/products";
+import { useT } from "@/lib/i18n/locale";
 import type { Product, Size } from "@/lib/types";
 
 interface SizeSelectorProps {
@@ -12,6 +13,7 @@ interface SizeSelectorProps {
 }
 
 export default function SizeSelector({ product, selected, onSelect }: SizeSelectorProps) {
+  const t = useT();
   const groupRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (size: Size, target: HTMLButtonElement) => {
@@ -20,7 +22,7 @@ export default function SizeSelector({ product, selected, onSelect }: SizeSelect
   };
 
   return (
-    <div ref={groupRef} role="radiogroup" aria-label="Size" className="flex flex-wrap gap-2">
+    <div ref={groupRef} role="radiogroup" aria-label={t("product.size")} className="flex flex-wrap gap-2">
       {ALL_SIZES.map((size) => {
         const isSoldOut = product.soldOutSizes.includes(size);
         const isSelected = selected === size;
@@ -31,7 +33,7 @@ export default function SizeSelector({ product, selected, onSelect }: SizeSelect
             role="radio"
             aria-checked={isSelected}
             disabled={isSoldOut}
-            aria-label={isSoldOut ? `${size} sold out` : size}
+            aria-label={isSoldOut ? `${size} — ${t("product.soldOut")}` : size}
             onClick={(event) => handleClick(size, event.currentTarget)}
             className={`h-11 min-w-[52px] rounded-full border px-4 text-sm font-medium transition-colors ${
               isSelected

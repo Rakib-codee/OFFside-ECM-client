@@ -6,6 +6,8 @@ import JerseyGraphic from "./JerseyGraphic";
 import { formatPrice } from "@/lib/format";
 import { ALL_SIZES, getEffectivePrice } from "@/lib/products";
 import { useCartStore } from "@/lib/store/cart";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedName, localizedTeam } from "@/lib/i18n/localize";
 import { useUiStore } from "@/lib/store/ui";
 import type { Product } from "@/lib/types";
 
@@ -15,6 +17,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, className }: ProductCardProps) {
+  const t = useT();
+  const locale = useLocale();
   const addItem = useCartStore((state) => state.addItem);
   const openCart = useUiStore((state) => state.openCart);
   const price = getEffectivePrice(product);
@@ -51,8 +55,8 @@ export default function ProductCard({ product, className }: ProductCardProps) {
               }`}
             >
               {product.badge === "sale" && product.salePrice
-                ? `Sale −${Math.round((1 - product.salePrice / product.price) * 100)}%`
-                : "New"}
+                ? `${t("product.sale")} −${Math.round((1 - product.salePrice / product.price) * 100)}%`
+                : t("product.new")}
             </span>
           ) : null}
 
@@ -73,8 +77,8 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
 
         <div className="flex flex-col gap-1 p-4">
-          <p className="text-sm uppercase tracking-wide text-secondary">{product.team}</p>
-          <p className="font-medium text-primary">{product.name}</p>
+          <p className="text-sm uppercase tracking-wide text-secondary">{localizedTeam(product, locale)}</p>
+          <p className="font-medium text-primary">{localizedName(product, locale)}</p>
           <p className="text-primary tnum">
             {product.salePrice ? (
               <>
@@ -93,7 +97,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         onClick={handleQuickAdd}
         className="absolute bottom-[104px] left-1/2 w-[85%] -translate-x-1/2 translate-y-3 rounded-md bg-black/90 py-2.5 text-sm font-medium text-white opacity-0 transition-all duration-300 ease-out hover:bg-accent focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100"
       >
-        Quick add — {formatPrice(price)}
+        {t("product.quickAdd")} — {formatPrice(price)}
       </button>
     </TiltCard>
   );

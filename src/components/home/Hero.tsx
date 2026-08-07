@@ -6,11 +6,12 @@ import MagneticButton from "@/components/fx/MagneticButton";
 import TransitionLink from "@/components/fx/TransitionLink";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { EASE_HERO, prefersReducedMotion } from "@/lib/motion";
+import { useT } from "@/lib/i18n/locale";
 
-const HEADLINE_WORDS = ["Wear", "the", "Game."];
 const SCROLL_CUE_HIDE_Y = 200;
 
 export default function Hero() {
+  const t = useT();
   const sectionRef = useRef<HTMLElement>(null);
   const [isCueVisible, setIsCueVisible] = useState(true);
 
@@ -83,7 +84,7 @@ export default function Hero() {
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-8">
         <h1 className="font-display font-bold leading-[1.02] text-primary" style={{ fontSize: "clamp(48px, 8vw, 96px)" }}>
-          {HEADLINE_WORDS.map((word) => (
+          {t("hero.headline").split(" ").map((word) => (
             <span key={word} className="inline-block overflow-hidden pb-1 align-bottom">
               <span data-hero-word className="inline-block will-change-transform">
                 {word}
@@ -92,7 +93,7 @@ export default function Hero() {
           ))}
         </h1>
         <p data-hero-fade className="mt-5 max-w-md text-lg text-secondary opacity-0">
-          Authentic jerseys. Bold designs. Built for the 12th man.
+          {t("hero.sub")}
         </p>
         <div data-hero-fade className="mt-9 opacity-0">
           <MagneticButton>
@@ -100,7 +101,7 @@ export default function Hero() {
               href="/shop"
               className="inline-block rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
             >
-              Shop 2026 Kits
+              {t("hero.cta")}
             </TransitionLink>
           </MagneticButton>
         </div>

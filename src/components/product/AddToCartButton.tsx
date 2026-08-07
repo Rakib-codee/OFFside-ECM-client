@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "@/lib/format";
+import { useT } from "@/lib/i18n/locale";
 
 const LOADING_MS = 700;
 const SUCCESS_RESET_MS = 2000;
@@ -17,6 +18,7 @@ interface AddToCartButtonProps {
 
 /** Full-width CTA that shrinks to a spinner, then springs back green. */
 export default function AddToCartButton({ price, disabled, onAdd }: AddToCartButtonProps) {
+  const t = useT();
   const [state, setState] = useState<ButtonState>("idle");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -62,15 +64,15 @@ export default function AddToCartButton({ price, disabled, onAdd }: AddToCartBut
       >
         {state === "loading" ? (
           <span
-            aria-label="Adding to cart"
+            aria-label={t("product.adding")}
             className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"
           />
         ) : state === "success" ? (
-          "Added ✓"
+          t("product.added")
         ) : disabled ? (
-          "Select a size"
+          t("product.selectSize")
         ) : (
-          `Add to cart — ${formatPrice(price)}`
+          `${t("product.addToCart")} — ${formatPrice(price)}`
         )}
       </button>
     </div>

@@ -3,12 +3,14 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import TransitionLink from "@/components/fx/TransitionLink";
+import { useT } from "@/lib/i18n/locale";
 import { useUiStore } from "@/lib/store/ui";
 import { NAV_LINKS } from "@/lib/site";
 import { EASE_OUT, prefersReducedMotion } from "@/lib/motion";
 
 /** Full-screen overlay menu with staggered link reveals (mobile only). */
 export default function MobileMenu() {
+  const t = useT();
   const isMenuOpen = useUiStore((state) => state.isMenuOpen);
   const closeMenu = useUiStore((state) => state.closeMenu);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -53,26 +55,26 @@ export default function MobileMenu() {
       className="fixed inset-0 z-[120] hidden flex-col bg-base/95 px-8 pb-28 pt-24 opacity-0 backdrop-blur-xl"
       role="dialog"
       aria-modal="true"
-      aria-label="Menu"
+      aria-label={t("nav.menu")}
     >
       <button
         type="button"
         onClick={closeMenu}
-        aria-label="Close menu"
+        aria-label={t("nav.closeMenu")}
         className="absolute right-5 top-5 rounded-lg p-2 text-2xl leading-none text-secondary hover:text-primary"
       >
         ×
       </button>
       <nav aria-label="Mobile">
         <ul className="flex flex-col gap-6">
-          {[...NAV_LINKS, { label: "Account", href: "/account" }].map((link) => (
-            <li key={link.label} data-menu-link>
+          {[...NAV_LINKS, { labelKey: "nav.account" as const, href: "/account" }].map((link) => (
+            <li key={link.labelKey} data-menu-link>
               <TransitionLink
                 href={link.href}
                 onNavigate={closeMenu}
                 className="font-display text-4xl font-semibold text-primary"
               >
-                {link.label}
+                {t(link.labelKey)}
               </TransitionLink>
             </li>
           ))}

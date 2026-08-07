@@ -1,18 +1,23 @@
+"use client";
+
 import Reveal from "@/components/fx/Reveal";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedQuote } from "@/lib/i18n/localize";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { PRODUCTS, REVIEWS } from "@/lib/products";
 import type { Review } from "@/lib/types";
 
 /** "The 12th Man" — infinite marquee of fan reviews and kit tiles. */
 export default function SocialProof() {
+  const t = useT();
   const firstRow = REVIEWS.slice(0, 4);
   const secondRow = REVIEWS.slice(4);
 
   return (
     <section className="overflow-hidden py-20 md:py-36" aria-label="Fan reviews">
       <Reveal className="mx-auto mb-12 max-w-[1400px] px-5 md:px-8">
-        <h2 className="font-display text-3xl font-semibold md:text-4xl">The 12th Man</h2>
-        <p className="mt-2 text-secondary">Worn loud by fans everywhere.</p>
+        <h2 className="font-display text-3xl font-semibold md:text-4xl">{t("proof.title")}</h2>
+        <p className="mt-2 text-secondary">{t("proof.sub")}</p>
       </Reveal>
       <Reveal>
         <div className="marquee-left marquee-paused mb-4 overflow-hidden">
@@ -46,11 +51,12 @@ function MarqueeRow({ reviews, productOffset }: { reviews: Review[]; productOffs
 }
 
 function ReviewAndTile({ review, productIndex }: { review: Review; productIndex: number }) {
+  const locale = useLocale();
   const product = PRODUCTS[productIndex];
   return (
     <>
       <figure className="flex h-[200px] w-[260px] shrink-0 flex-col justify-between rounded-xl border border-line bg-card p-5 transition-transform duration-300 hover:scale-105">
-        <blockquote className="text-sm leading-relaxed text-primary">“{review.quote}”</blockquote>
+        <blockquote className="text-sm leading-relaxed text-primary">“{localizedQuote(review, locale)}”</blockquote>
         <figcaption className="flex items-center justify-between">
           <span className="text-xs font-medium text-secondary">{review.name}</span>
           <span className="text-xs text-accent" aria-label={`${review.rating} out of 5 stars`}>

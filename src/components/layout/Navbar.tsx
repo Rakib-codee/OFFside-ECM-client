@@ -5,14 +5,17 @@ import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import Logo from "./Logo";
 import ThemeToggle from "./ThemeToggle";
+import LanguageToggle from "./LanguageToggle";
 import ScrambleText from "@/components/fx/ScrambleText";
 import TransitionLink from "@/components/fx/TransitionLink";
+import { useT } from "@/lib/i18n/locale";
 import { selectCount, useCartStore } from "@/lib/store/cart";
 import { useUiStore } from "@/lib/store/ui";
 import { NAV_LINKS, NAV_SOLID_SCROLL_Y } from "@/lib/site";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const t = useT();
   const [isSolid, setIsSolid] = useState(false);
   const count = useCartStore(selectCount);
   const addCounter = useCartStore((state) => state.addCounter);
@@ -66,12 +69,12 @@ export default function Navbar() {
 
         <ul className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
-            <li key={link.label}>
+            <li key={link.labelKey}>
               <TransitionLink
                 href={link.href}
                 className="group relative text-sm font-medium text-secondary transition-colors hover:text-primary"
               >
-                <ScrambleText text={link.label} />
+                <ScrambleText text={t(link.labelKey)} />
                 <span
                   className={`absolute -bottom-1 left-0 h-px w-full origin-left bg-accent transition-transform duration-300 ${
                     isActive(link.href) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
@@ -83,11 +86,12 @@ export default function Navbar() {
         </ul>
 
         <div className="flex items-center gap-1">
+          <LanguageToggle />
           <ThemeToggle />
           <button
             type="button"
             onClick={openCart}
-            aria-label={`Open cart, ${count} item${count === 1 ? "" : "s"}`}
+            aria-label={`${t("nav.openCart")} (${count})`}
             className="relative rounded-lg p-2 transition-colors hover:bg-elevated"
           >
             <BagIcon />

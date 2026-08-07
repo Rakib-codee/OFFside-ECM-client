@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import JerseyGraphic from "./JerseyGraphic";
+import { useT } from "@/lib/i18n/locale";
 import type { JerseyColors, Product } from "@/lib/types";
 
 const SWIPE_THRESHOLD_PX = 50;
@@ -31,6 +32,7 @@ export default function Gallery({
   activeIndex,
   onIndexChange,
 }: GalleryProps) {
+  const t = useT();
   const [isZoomed, setIsZoomed] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
   const lightboxRef = useRef<HTMLDivElement>(null);
@@ -129,7 +131,7 @@ export default function Gallery({
         className="flex-1 touch-pan-y select-none rounded-2xl bg-elevated p-8"
         role="button"
         tabIndex={0}
-        aria-label="Product image. Drag to rotate, click to zoom"
+        aria-label={t("product.dragHint")}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             setIsZoomed(true);
@@ -144,13 +146,13 @@ export default function Gallery({
           ref={lightboxRef}
           role="dialog"
           aria-modal="true"
-          aria-label="Zoomed product image"
+          aria-label={t("product.dragHint")}
           onClick={() => setIsZoomed(false)}
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 p-8"
         >
           <button
             type="button"
-            aria-label="Close zoom"
+            aria-label={t("product.zoomClose")}
             className="absolute right-6 top-6 text-3xl leading-none text-white/80 hover:text-white"
           >
             ×

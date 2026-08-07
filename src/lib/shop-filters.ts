@@ -1,4 +1,7 @@
 import { getEffectivePrice, PRODUCTS } from "./products";
+import { localizedTeamLabel } from "./i18n/localize";
+import type { MessageKey } from "./i18n/dictionary";
+import type { Locale } from "./i18n/locale";
 import type { Category, Product, Size } from "./types";
 
 export const PRICE_CEILING = 120;
@@ -25,12 +28,12 @@ export const DEFAULT_FILTERS: ShopFilters = {
 
 export const ALL_TEAMS = [...new Set(PRODUCTS.map((product) => product.team))].sort();
 
-export const CATEGORY_LABELS: Record<Category, string> = {
-  club: "Club Kits",
-  national: "National Teams",
-  retro: "Retro",
-  training: "Training",
-  kids: "Kids",
+export const CATEGORY_LABEL_KEYS: Record<Category, MessageKey> = {
+  club: "cat.club",
+  national: "cat.national",
+  retro: "cat.retro",
+  training: "cat.training",
+  kids: "cat.kids",
 };
 
 export function applyFilters(filters: ShopFilters): Product[] {
@@ -81,18 +84,24 @@ export function sortProducts(products: Product[], order: SortOrder): Product[] {
 /** Human-readable chips for every active (non-default) filter. */
 export function describeActiveFilters(
   filters: ShopFilters,
+  t: (key: MessageKey) => string,
+  locale: Locale,
 ): { key: string; label: string }[] {
   const chips: { key: string; label: string }[] = [];
   if (filters.category) {
-    chips.push({ key: "category", label: CATEGORY_LABELS[filters.category] });
+    chips.push({ key: "category", label: t(CATEGORY_LABEL_KEYS[filters.category]) });
   }
   if (filters.tag) {
-    chips.push({ key: "tag", label: filters.tag === "new" ? "New Arrivals" : "On Sale" });
+    chips.push({ key: "tag", label: filters.tag === "new" ? t("shop.chipNew") : t("shop.chipSale") });
   }
-  filters.teams.forEach((team) => chips.push({ key: `team:${team}`, label: team }));
-  filters.sizes.forEach((size) => chips.push({ key: `size:${size}`, label: `Size ${size}` }));
+  filters.teams.forEach((team) =>
+    chips.push({ key: `team:${team}`, label: localizedTeamLabel(team, locale) }),
+  );
+  filters.sizes.forEach((size) =>
+    chips.push({ key: `size:${size}`, label: `${t("cart.size")} ${size}` }),
+  );
   if (filters.maxPrice < PRICE_CEILING) {
-    chips.push({ key: "price", label: `Under $${filters.maxPrice}` });
+    chips.push({ key: "price", label: `${t("shop.under")} $${filters.maxPrice}` });
   }
   if (filters.query.trim()) {
     chips.push({ key: "query", label: `“${filters.query.trim()}”` });

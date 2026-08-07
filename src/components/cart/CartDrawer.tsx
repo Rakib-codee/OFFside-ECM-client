@@ -6,6 +6,8 @@ import JerseyGraphic from "@/components/product/JerseyGraphic";
 import TransitionLink from "@/components/fx/TransitionLink";
 import QtyStepper from "./QtyStepper";
 import { formatPrice } from "@/lib/format";
+import { useLocale, useT } from "@/lib/i18n/locale";
+import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
 import { EASE_OUT, prefersReducedMotion } from "@/lib/motion";
 import {
   selectShipping,
@@ -17,6 +19,8 @@ import { useUiStore } from "@/lib/store/ui";
 const MOBILE_QUERY = "(max-width: 767px)";
 
 export default function CartDrawer() {
+  const t = useT();
+  const locale = useLocale();
   const isCartOpen = useUiStore((state) => state.isCartOpen);
   const closeCart = useUiStore((state) => state.closeCart);
   const items = useCartStore((state) => state.items);
@@ -90,18 +94,18 @@ export default function CartDrawer() {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Shopping cart"
+        aria-label={t("cart.title")}
         className="fixed bottom-0 right-0 z-[140] flex h-[92dvh] w-full translate-y-full flex-col rounded-t-2xl border-t border-line bg-card md:top-0 md:h-full md:max-w-md md:translate-x-full md:translate-y-0 md:rounded-none md:border-l md:border-t-0"
       >
         <header className="flex items-center justify-between border-b border-line px-6 py-5">
           <h2 className="font-display text-lg font-semibold">
-            Your cart {itemCount > 0 ? `(${itemCount})` : ""}
+            {t("cart.title")} {itemCount > 0 ? `(${itemCount})` : ""}
           </h2>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={closeCart}
-            aria-label="Close cart"
+            aria-label={t("cart.close")}
             className="rounded-lg p-1.5 text-2xl leading-none text-secondary transition-colors hover:text-primary"
           >
             ×
@@ -115,13 +119,13 @@ export default function CartDrawer() {
                 colors={{ body: "#2a2a2a", sleeve: "#1a1a1a", accent: "#666666", text: "#666666" }}
               />
             </div>
-            <p className="text-secondary">Your cart is empty</p>
+            <p className="text-secondary">{t("cart.empty")}</p>
             <button
               type="button"
               onClick={closeCart}
               className="text-sm font-medium text-primary underline underline-offset-4 hover:text-accent"
             >
-              Continue shopping
+              {t("cart.continue")}
             </button>
           </div>
         ) : (
@@ -142,10 +146,10 @@ export default function CartDrawer() {
                     />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="truncate text-xs uppercase tracking-wider text-secondary">{item.team}</p>
-                    <p className="truncate text-sm font-medium">{item.name}</p>
+                    <p className="truncate text-xs uppercase tracking-wider text-secondary">{localizedTeamById(item.productId, item.team, locale)}</p>
+                    <p className="truncate text-sm font-medium">{localizedNameById(item.productId, item.name, locale)}</p>
                     <p className="text-xs text-muted">
-                      Size {item.size}
+                      {t("cart.size")} {item.size}
                       {item.customName ? ` · ${item.customName}` : ""}
                       {item.customNumber ? ` #${item.customNumber}` : ""}
                     </p>
@@ -163,7 +167,7 @@ export default function CartDrawer() {
                   <button
                     type="button"
                     onClick={() => removeItem(item.key)}
-                    aria-label={`Remove ${item.team} ${item.name}`}
+                    aria-label={`${t("cart.remove")}: ${item.team} ${item.name}`}
                     className="self-start p-1 text-muted opacity-100 transition-opacity hover:text-accent md:opacity-0 md:group-hover:opacity-100"
                   >
                     <TrashIcon />
@@ -175,15 +179,15 @@ export default function CartDrawer() {
             <footer className="border-t border-line px-6 py-5">
               <dl className="mb-4 flex flex-col gap-1.5 text-sm">
                 <div className="flex justify-between text-secondary">
-                  <dt>Subtotal</dt>
+                  <dt>{t("cart.subtotal")}</dt>
                   <dd className="tnum">{formatPrice(subtotal)}</dd>
                 </div>
                 <div className="flex justify-between text-secondary">
-                  <dt>Shipping</dt>
-                  <dd className="tnum">{shipping === 0 ? "Free" : formatPrice(shipping)}</dd>
+                  <dt>{t("cart.shipping")}</dt>
+                  <dd className="tnum">{shipping === 0 ? t("cart.free") : formatPrice(shipping)}</dd>
                 </div>
                 <div className="flex justify-between text-base font-semibold text-primary">
-                  <dt>Total</dt>
+                  <dt>{t("cart.total")}</dt>
                   <dd className="tnum">{formatPrice(total)}</dd>
                 </div>
               </dl>
@@ -192,7 +196,7 @@ export default function CartDrawer() {
                 onNavigate={closeCart}
                 className="flex h-14 w-full items-center justify-center rounded-lg bg-cta font-medium text-cta-text transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-white"
               >
-                Checkout
+                {t("cart.checkout")}
               </TransitionLink>
             </footer>
           </>
@@ -214,3 +218,4 @@ function TrashIcon() {
     </svg>
   );
 }
+

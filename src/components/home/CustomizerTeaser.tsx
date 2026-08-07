@@ -9,6 +9,7 @@ import TransitionLink from "@/components/fx/TransitionLink";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { CUSTOMIZATION_PRICE } from "@/lib/products";
 import { EASE_OUT, prefersReducedMotion } from "@/lib/motion";
+import { useT } from "@/lib/i18n/locale";
 import type { JerseyColors } from "@/lib/types";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -26,6 +27,7 @@ const COLORWAYS: { key: string; colors: JerseyColors }[] = [
 
 /** "Make It Yours" — live name/number/color preview with animated pricing. */
 export default function CustomizerTeaser() {
+  const t = useT();
   const sectionRef = useRef<HTMLElement>(null);
   const [name, setName] = useState("");
   const [number, setNumber] = useState("10");
@@ -99,7 +101,7 @@ export default function CustomizerTeaser() {
             view="back"
             name={name || undefined}
             number={number || undefined}
-            label={`Custom jersey preview${name ? ` for ${name}` : ""}`}
+            label={`${t("custom.preview")}${name ? ` — ${name}` : ""}`}
             className="mx-auto w-full drop-shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
           />
         </div>
@@ -107,18 +109,18 @@ export default function CustomizerTeaser() {
         <div className="flex w-full max-w-sm flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
             <label className="flex flex-col gap-1.5 text-xs uppercase tracking-wider text-secondary">
-              Name
+              {t("custom.name")}
               <input
                 type="text"
                 value={name}
                 maxLength={MAX_NAME_LENGTH}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Your name"
+                placeholder={t("custom.namePlaceholder")}
                 className="h-12 rounded-lg border border-line bg-elevated px-4 text-base normal-case tracking-normal text-primary placeholder:text-muted focus:border-white focus:outline-none"
               />
             </label>
             <label className="flex flex-col gap-1.5 text-xs uppercase tracking-wider text-secondary">
-              Number
+              {t("custom.number")}
               <input
                 type="text"
                 inputMode="numeric"
@@ -129,7 +131,7 @@ export default function CustomizerTeaser() {
               />
             </label>
           </div>
-          <div className="flex items-center gap-3" role="radiogroup" aria-label="Jersey color">
+          <div className="flex items-center gap-3" role="radiogroup" aria-label={t("custom.colorLabel")}>
             {COLORWAYS.map((colorway, index) => (
               <button
                 key={colorway.key}
@@ -149,15 +151,15 @@ export default function CustomizerTeaser() {
       </div>
 
       <div data-col-right>
-        <h2 className="font-display text-4xl font-semibold md:text-5xl">Make it personal</h2>
+        <h2 className="font-display text-4xl font-semibold md:text-5xl">{t("custom.title")}</h2>
         <p className="mt-4 max-w-md text-lg text-secondary">
-          Add your name and number. Choose your colors. Own the kit.
+          {t("custom.sub")}
         </p>
         <p className="mt-8 text-3xl font-semibold">
           <AnimatedPrice value={price} />
         </p>
         <p className="mt-1 text-sm text-muted">
-          Includes {name || number ? "custom printing" : "base jersey"} · Free shipping over $150
+          {name || number ? t("custom.printing") : t("custom.base")} · {t("custom.freeShip")}
         </p>
         <div className="mt-8">
           <MagneticButton>
@@ -165,7 +167,7 @@ export default function CustomizerTeaser() {
               href="/product/crimson-fc-home-2026"
               className="inline-block rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
             >
-              Start Customizing
+              {t("custom.cta")}
             </TransitionLink>
           </MagneticButton>
         </div>

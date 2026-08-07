@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n/locale";
+
 const THEME_STORAGE_KEY = "offside-theme";
 
 /**
@@ -8,6 +10,7 @@ const THEME_STORAGE_KEY = "offside-theme";
  * needs no React state: icons swap via the `light:` CSS variant.
  */
 export default function ThemeToggle() {
+  const t = useT();
   const handleToggle = () => {
     const isLight = document.documentElement.classList.toggle("light");
     try {
@@ -21,7 +24,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={handleToggle}
-      aria-label="Switch between dark and light theme"
+      aria-label={t("nav.themeToggle")}
       className="rounded-lg p-2 text-secondary transition-colors hover:bg-elevated hover:text-primary"
     >
       <span className="light:hidden">
