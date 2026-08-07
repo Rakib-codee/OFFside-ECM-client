@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local agent/prompt files — never commit
+jersey-ecommerce-master-prompt.md
+CLAUDE.md
+AGENTS.md
+.claude/
