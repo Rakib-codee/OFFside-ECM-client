@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import { Inter, Oswald, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import SmoothScroll from "@/components/fx/SmoothScroll";
+import CustomCursor from "@/components/fx/CustomCursor";
+import ScrollProgress from "@/components/fx/ScrollProgress";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import MobileMenu from "@/components/layout/MobileMenu";
+import MobileTabBar from "@/components/layout/MobileTabBar";
+import CartDrawer from "@/components/cart/CartDrawer";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -35,7 +43,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${oswald.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SmoothScroll />
+        <CustomCursor />
+        <ScrollProgress />
+        <Navbar />
+        {children}
+        <Footer />
+        <CartDrawer />
+        <MobileMenu />
+        <MobileTabBar />
+      </body>
     </html>
   );
 }
