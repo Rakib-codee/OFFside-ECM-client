@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import { isFinePointer, prefersReducedMotion } from "@/lib/motion";
 
 const FOLLOW_LERP = 0.15;
 const CLICKABLE_SELECTOR =
   'a, button, input, textarea, select, label, [role="button"], [data-cursor]';
+
+const POINTER_QUERIES = ["(pointer: fine)", "(prefers-reduced-motion: reduce)"];
+
+function subscribeToPointerCapability(onChange: () => void): () => void {
+  const mediaLists = POINTER_QUERIES.map((query) => window.matchMedia(query));
+  mediaLists.forEach((list) => list.addEventListener("change", onChange));
+  return () => mediaLists.forEach((list) => list.removeEventListener("change", onChange));
+}
 
 /**
  * White dot cursor that lerps after the mouse, grows with blend-difference
@@ -17,11 +25,11 @@ export default function CustomCursor() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dotRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<HTMLDivElement>(null);
-  const [isEnabled, setIsEnabled] = useState(false);
-
-  useEffect(() => {
-    setIsEnabled(isFinePointer() && !prefersReducedMotion());
-  }, []);
+  const isEnabled = useSyncExternalStore(
+    subscribeToPointerCapability,
+    () => isFinePointer() && !prefersReducedMotion(),
+    () => false,
+  );
 
   useEffect(() => {
     const wrapper = wrapperRef.current;

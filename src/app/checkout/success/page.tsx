@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import TransitionLink from "@/components/fx/TransitionLink";
 import { formatPrice } from "@/lib/format";
@@ -17,29 +17,45 @@ interface StoredOrder {
   itemCount: number;
 }
 
+const EMPTY_SUBSCRIBE = () => () => {};
+
+/** Cached so the snapshot stays stable across renders (client-only value). */
+let cachedDeliveryDate: string | null = null;
+function getDeliveryDateSnapshot(): string {
+  if (cachedDeliveryDate === null) {
+    const estimated = new Date();
+    estimated.setDate(estimated.getDate() + DELIVERY_DAYS);
+    cachedDeliveryDate = estimated.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+  return cachedDeliveryDate;
+}
+
 export default function OrderSuccessPage() {
-  const [order, setOrder] = useState<StoredOrder | null>(null);
-  const [deliveryDate, setDeliveryDate] = useState("");
   const checkRef = useRef<SVGPathElement>(null);
   const circleRef = useRef<SVGCircleElement>(null);
   const confettiRef = useRef<HTMLDivElement>(null);
 
-  // Load the order stored by the checkout step
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("offside-order");
-      if (raw) {
-        setOrder(JSON.parse(raw) as StoredOrder);
-      }
-    } catch {
-      // Corrupt storage — fall back to the generic confirmation
+  // Order details written by the checkout step (client-only reads)
+  const orderRaw = useSyncExternalStore(
+    EMPTY_SUBSCRIBE,
+    () => sessionStorage.getItem("offside-order"),
+    () => null,
+  );
+  const deliveryDate = useSyncExternalStore(EMPTY_SUBSCRIBE, getDeliveryDateSnapshot, () => "");
+  const order = useMemo(() => {
+    if (!orderRaw) {
+      return null;
     }
-    const estimated = new Date();
-    estimated.setDate(estimated.getDate() + DELIVERY_DAYS);
-    setDeliveryDate(
-      estimated.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-    );
-  }, []);
+    try {
+      return JSON.parse(orderRaw) as StoredOrder;
+    } catch {
+      return null;
+    }
+  }, [orderRaw]);
 
   // Checkmark draws itself, then confetti bursts
   useEffect(() => {

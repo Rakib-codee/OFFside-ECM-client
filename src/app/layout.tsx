@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Oswald, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "@/components/fx/SmoothScroll";
@@ -35,6 +35,10 @@ export const metadata: Metadata = {
   },
   description:
     "Authentic football jerseys. Bold designs. Built for the 12th man.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

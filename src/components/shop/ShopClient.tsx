@@ -28,8 +28,11 @@ export default function ShopClient() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Seed filters from the URL (?cat=, ?tag=, ?focus=search)
-  useEffect(() => {
+  // Seed filters from the URL (?cat=, ?tag=) — render-time state adjustment
+  const paramsKey = searchParams.toString();
+  const [seenParamsKey, setSeenParamsKey] = useState<string | null>(null);
+  if (paramsKey !== seenParamsKey) {
+    setSeenParamsKey(paramsKey);
     const cat = searchParams.get("cat") as Category | null;
     const tag = searchParams.get("tag");
     setFilters((current) => ({
@@ -37,6 +40,10 @@ export default function ShopClient() {
       category: cat && VALID_CATEGORIES.includes(cat) ? cat : null,
       tag: tag === "new" || tag === "sale" ? tag : null,
     }));
+  }
+
+  // ?focus=search (bottom tab bar) drops the user into the search box
+  useEffect(() => {
     if (searchParams.get("focus") === "search") {
       searchRef.current?.focus();
     }
