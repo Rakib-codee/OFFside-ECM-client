@@ -83,7 +83,7 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
               onClick={() => toggleSize(size)}
               className={`h-9 min-w-[44px] rounded-full border px-3 text-sm transition-colors ${
                 filters.sizes.includes(size)
-                  ? "border-transparent bg-white text-black"
+                  ? "border-transparent bg-cta text-cta-text"
                   : "border-line text-secondary hover:text-primary"
               }`}
             >

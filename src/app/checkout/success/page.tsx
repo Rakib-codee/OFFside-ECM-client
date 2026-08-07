@@ -131,7 +131,7 @@ export default function OrderSuccessPage() {
 
       <TransitionLink
         href="/shop"
-        className="mt-10 rounded-lg bg-white px-10 py-4 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95"
+        className="mt-10 rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95"
       >
         Continue shopping
       </TransitionLink>

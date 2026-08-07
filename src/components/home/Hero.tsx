@@ -64,8 +64,8 @@ export default function Hero() {
           background:
             "radial-gradient(ellipse 60% 40% at 20% 0%, rgba(0,122,255,0.16), transparent 60%)," +
             "radial-gradient(ellipse 60% 40% at 80% 0%, rgba(255,59,48,0.14), transparent 60%)," +
-            "repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 120px, transparent 120px 240px)," +
-            "#0a0a0a",
+            "repeating-linear-gradient(90deg, color-mix(in srgb, var(--t-primary) 2%, transparent) 0 120px, transparent 120px 240px)," +
+            "var(--t-base)",
         }}
       />
       {/* Oversized drifting jerseys */}
@@ -78,7 +78,7 @@ export default function Hero() {
       {/* Bottom fade overlay */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80"
+        className="absolute inset-0 bg-gradient-to-b from-base/30 via-transparent to-base/80"
       />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-8">
@@ -98,7 +98,7 @@ export default function Hero() {
           <MagneticButton>
             <TransitionLink
               href="/shop"
-              className="inline-block rounded-lg bg-white px-10 py-4 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
+              className="inline-block rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
             >
               Shop 2026 Kits
             </TransitionLink>
@@ -108,7 +108,7 @@ export default function Hero() {
 
       <div
         aria-hidden="true"
-        className={`absolute bottom-8 left-1/2 h-14 w-px -translate-x-1/2 bg-white/60 transition-opacity duration-500 motion-safe:animate-[scroll-cue_2s_ease-in-out_infinite] ${
+        className={`absolute bottom-8 left-1/2 h-14 w-px -translate-x-1/2 bg-cta/60 transition-opacity duration-500 motion-safe:animate-[scroll-cue_2s_ease-in-out_infinite] ${
           isCueVisible ? "opacity-100" : "opacity-0"
         }`}
       />

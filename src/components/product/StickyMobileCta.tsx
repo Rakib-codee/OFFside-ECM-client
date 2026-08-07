@@ -41,7 +41,7 @@ export default function StickyMobileCta({ watchRef, price, disabled, onAdd }: St
         onClick={onAdd}
         disabled={disabled}
         className={`h-11 flex-1 rounded-lg text-sm font-medium transition-colors ${
-          disabled ? "cursor-not-allowed bg-elevated text-muted" : "bg-white text-black"
+          disabled ? "cursor-not-allowed bg-elevated text-muted" : "bg-cta text-cta-text"
         }`}
       >
         {disabled ? "Select a size" : "Add to cart"}

@@ -56,7 +56,7 @@ export default function Newsletter() {
             className={`h-14 rounded-lg px-8 font-medium transition-all duration-[400ms] ease-in-out ${
               state === "success"
                 ? "bg-success text-white"
-                : "bg-white text-black hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
+                : "bg-cta text-cta-text hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
             }`}
           >
             {state === "success" ? "You're in! ✓" : "Subscribe"}

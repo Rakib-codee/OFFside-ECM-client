@@ -163,7 +163,7 @@ export default function CustomizerTeaser() {
           <MagneticButton>
             <TransitionLink
               href="/product/crimson-fc-home-2026"
-              className="inline-block rounded-lg bg-white px-10 py-4 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
+              className="inline-block rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white hover:shadow-[0_8px_24px_rgba(255,59,48,0.3)] active:scale-95"
             >
               Start Customizing
             </TransitionLink>

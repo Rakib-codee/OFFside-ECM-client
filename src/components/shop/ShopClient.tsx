@@ -168,7 +168,7 @@ export default function ShopClient() {
               <button
                 type="button"
                 onClick={() => setFilters(DEFAULT_FILTERS)}
-                className="mt-2 rounded-lg bg-white px-6 py-2.5 text-sm font-medium text-black transition-colors hover:bg-accent hover:text-white"
+                className="mt-2 rounded-lg bg-cta px-6 py-2.5 text-sm font-medium text-cta-text transition-colors hover:bg-accent hover:text-white"
               >
                 Clear filters
               </button>
@@ -231,7 +231,7 @@ export default function ShopClient() {
             <button
               type="button"
               onClick={() => setIsSheetOpen(false)}
-              className="mt-6 h-12 w-full rounded-lg bg-white font-medium text-black"
+              className="mt-6 h-12 w-full rounded-lg bg-cta font-medium text-cta-text"
             >
               Show {results.length} result{results.length === 1 ? "" : "s"}
             </button>

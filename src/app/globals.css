@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
+/* Styles scoped to light mode: `light:` utilities */
+@custom-variant light (&:where(.light, .light *));
+
+/* Dark sport palette (default) */
+:root {
+  --t-base: #0a0a0a;
+  --t-card: #121212;
+  --t-elevated: #1a1a1a;
+  --t-primary: #ffffff;
+  --t-secondary: #a0a0a0;
+  --t-muted: #666666;
+  --t-line: #2a2a2a;
+  /* Primary CTA surface: white-on-dark flips to ink-on-light */
+  --t-cta: #ffffff;
+  --t-cta-text: #000000;
+  color-scheme: dark;
+}
+
+html.light {
+  --t-base: #f6f6f7;
+  --t-card: #ffffff;
+  --t-elevated: #ebebee;
+  --t-primary: #101013;
+  --t-secondary: #55555c;
+  --t-muted: #8f8f97;
+  --t-line: #dfdfe4;
+  --t-cta: #101013;
+  --t-cta-text: #ffffff;
+  color-scheme: light;
+}
+
 @theme inline {
-  /* Dark sport palette */
-  --color-base: #0a0a0a;
-  --color-card: #121212;
-  --color-elevated: #1a1a1a;
-  --color-primary: #ffffff;
-  --color-secondary: #a0a0a0;
-  --color-muted: #666666;
+  --color-base: var(--t-base);
+  --color-card: var(--t-card);
+  --color-elevated: var(--t-elevated);
+  --color-primary: var(--t-primary);
+  --color-secondary: var(--t-secondary);
+  --color-muted: var(--t-muted);
   --color-accent: #ff3b30;
   --color-accent-alt: #007aff;
-  --color-line: #2a2a2a;
+  --color-line: var(--t-line);
   --color-success: #34c759;
+  --color-cta: var(--t-cta);
+  --color-cta-text: var(--t-cta-text);
 
-  /* Type system */
-  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
-  --font-jersey: var(--font-oswald), system-ui, sans-serif;
+  /* Type system — Bengali fallback covers Bangla glyphs in every stack */
+  --font-display: var(--font-space-grotesk), var(--font-bengali), system-ui, sans-serif;
+  --font-body: var(--font-inter), var(--font-bengali), system-ui, sans-serif;
+  --font-jersey: var(--font-oswald), var(--font-bengali), system-ui, sans-serif;
 }
 
 html {
-  color-scheme: dark;
   background: var(--color-base);
 }
 
@@ -38,7 +69,7 @@ body {
 
 /* Visible focus ring on every interactive element */
 :focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--t-primary);
   outline-offset: 2px;
   border-radius: 4px;
 }

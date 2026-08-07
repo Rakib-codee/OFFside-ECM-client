@@ -190,7 +190,7 @@ export default function CartDrawer() {
               <TransitionLink
                 href="/checkout"
                 onNavigate={closeCart}
-                className="flex h-14 w-full items-center justify-center rounded-lg bg-white font-medium text-black transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-white"
+                className="flex h-14 w-full items-center justify-center rounded-lg bg-cta font-medium text-cta-text transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-white"
               >
                 Checkout
               </TransitionLink>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Oswald, Space_Grotesk } from "next/font/google";
+import { Hind_Siliguri, Inter, Oswald, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "@/components/fx/SmoothScroll";
 import CustomCursor from "@/components/fx/CustomCursor";
@@ -28,6 +28,15 @@ const oswald = Oswald({
   weight: ["500", "600"],
 });
 
+const hindSiliguri = Hind_Siliguri({
+  variable: "--font-bengali",
+  subsets: ["bengali", "latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+/** Applies the saved theme before first paint so there is no flash. */
+const THEME_INIT_SCRIPT = `try{if(localStorage.getItem("offside-theme")==="light")document.documentElement.classList.add("light")}catch(e){}`;
+
 export const metadata: Metadata = {
   title: {
     default: "OFFside — Wear the Game",
@@ -45,9 +54,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${oswald.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${spaceGrotesk.variable} ${inter.variable} ${oswald.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <SmoothScroll />
         <CustomCursor />
         <ScrollProgress />

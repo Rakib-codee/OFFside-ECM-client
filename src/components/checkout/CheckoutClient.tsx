@@ -139,7 +139,7 @@ export default function CheckoutClient() {
         <p className="text-lg font-medium">Your cart is empty</p>
         <TransitionLink
           href="/shop"
-          className="mt-2 rounded-lg bg-white px-8 py-3 font-medium text-black transition-colors hover:bg-accent hover:text-white"
+          className="mt-2 rounded-lg bg-cta px-8 py-3 font-medium text-cta-text transition-colors hover:bg-accent hover:text-white"
         >
           Continue shopping
         </TransitionLink>
@@ -148,7 +148,7 @@ export default function CheckoutClient() {
   }
 
   const continueButtonClass =
-    "h-14 w-full rounded-lg bg-white font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95";
+    "h-14 w-full rounded-lg bg-cta font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95";
 
   return (
     <div>
@@ -350,7 +350,7 @@ export default function CheckoutClient() {
                 <button
                   type="button"
                   onClick={placeOrder}
-                  className="h-14 rounded-lg bg-white font-semibold text-black transition-transform hover:scale-[1.02]"
+                  className="h-14 rounded-lg bg-cta font-semibold text-cta-text transition-transform hover:scale-[1.02]"
                 >
                   G Pay
                 </button>

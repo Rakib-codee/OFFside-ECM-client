@@ -56,7 +56,7 @@ export default function AddToCartButton({ price, disabled, onAdd }: AddToCartBut
             : state === "idle"
               ? disabled
                 ? "cursor-not-allowed bg-elevated text-muted"
-                : "bg-white text-black hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(255,255,255,0.1)]"
+                : "bg-cta text-cta-text hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(255,255,255,0.1)]"
               : ""
         }`}
       >

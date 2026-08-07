@@ -106,7 +106,7 @@ export default function ProductTabs({ product }: { product: Product }) {
                   aria-pressed={bodyType === type}
                   className={`rounded-full border px-5 py-2 text-sm transition-colors ${
                     bodyType === type
-                      ? "border-transparent bg-white text-black"
+                      ? "border-transparent bg-cta text-cta-text"
                       : "border-line text-secondary hover:text-primary"
                   }`}
                 >

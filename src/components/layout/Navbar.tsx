@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import Logo from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 import ScrambleText from "@/components/fx/ScrambleText";
 import TransitionLink from "@/components/fx/TransitionLink";
 import { selectCount, useCartStore } from "@/lib/store/cart";
@@ -81,22 +82,25 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <button
-          type="button"
-          onClick={openCart}
-          aria-label={`Open cart, ${count} item${count === 1 ? "" : "s"}`}
-          className="relative rounded-lg p-2 transition-colors hover:bg-elevated"
-        >
-          <BagIcon />
-          {count > 0 ? (
-            <span
-              ref={badgeRef}
-              className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-white tnum"
-            >
-              {count}
-            </span>
-          ) : null}
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={openCart}
+            aria-label={`Open cart, ${count} item${count === 1 ? "" : "s"}`}
+            className="relative rounded-lg p-2 transition-colors hover:bg-elevated"
+          >
+            <BagIcon />
+            {count > 0 ? (
+              <span
+                ref={badgeRef}
+                className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-white tnum"
+              >
+                {count}
+              </span>
+            ) : null}
+          </button>
+        </div>
       </nav>
     </header>
   );
