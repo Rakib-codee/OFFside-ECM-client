@@ -15,11 +15,4 @@ export const SOCIAL_LINKS = [
   { label: "X", href: "#" },
 ] as const;
 
-/** Toggles the "Matchday Live" banner on the homepage. */
-export const MATCHDAY = {
-  isLive: true,
-  home: "Crimson FC",
-  away: "Azure City",
-};
-
 export const NAV_SOLID_SCROLL_Y = 100;
