@@ -21,6 +21,7 @@
 
 html {
   color-scheme: dark;
+  background: var(--color-base);
 }
 
 body {
