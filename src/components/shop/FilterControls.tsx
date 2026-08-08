@@ -99,13 +99,13 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
 
       <fieldset>
         <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">
-          {t("shop.maxPrice")}: <span className="tnum">${filters.maxPrice}</span>
+          {t("shop.maxPrice")}: <span className="tnum">৳{filters.maxPrice}</span>
         </legend>
         <input
           type="range"
-          min={50}
+          min={400}
           max={PRICE_CEILING}
-          step={5}
+          step={50}
           value={filters.maxPrice}
           onChange={(event) => onChange({ ...filters, maxPrice: Number(event.target.value) })}
           className="w-full accent-[#ff3b30]"

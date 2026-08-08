@@ -18,8 +18,11 @@ export interface CartItem {
   customNumber?: string;
 }
 
-export const FREE_SHIPPING_THRESHOLD = 150;
-export const SHIPPING_FLAT_RATE = 8;
+export const FREE_SHIPPING_THRESHOLD = 2500;
+/** Delivery zone rates (Taka). The drawer estimates with the Dhaka rate. */
+export const DHAKA_SHIPPING_RATE = 70;
+export const OUTSIDE_DHAKA_SHIPPING_RATE = 130;
+export const SHIPPING_FLAT_RATE = DHAKA_SHIPPING_RATE;
 const MAX_QUANTITY_PER_ITEM = 10;
 
 interface CartState {

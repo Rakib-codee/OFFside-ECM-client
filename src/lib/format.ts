@@ -1,10 +1,4 @@
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
-
+/** Prices are stored as integer Taka amounts. en-IN grouping matches BD convention. */
 export function formatPrice(amount: number): string {
-  return currencyFormatter.format(amount);
+  return `৳${amount.toLocaleString("en-IN")}`;
 }

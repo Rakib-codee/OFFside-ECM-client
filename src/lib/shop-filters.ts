@@ -4,7 +4,7 @@ import type { MessageKey } from "./i18n/dictionary";
 import type { Locale } from "./i18n/locale";
 import type { Category, Product, Size } from "./types";
 
-export const PRICE_CEILING = 120;
+export const PRICE_CEILING = 1000;
 
 export type SortOrder = "featured" | "price-asc" | "price-desc" | "rating";
 
@@ -101,7 +101,7 @@ export function describeActiveFilters(
     chips.push({ key: `size:${size}`, label: `${t("cart.size")} ${size}` }),
   );
   if (filters.maxPrice < PRICE_CEILING) {
-    chips.push({ key: "price", label: `${t("shop.under")} $${filters.maxPrice}` });
+    chips.push({ key: "price", label: `${t("shop.under")} ৳${filters.maxPrice}` });
   }
   if (filters.query.trim()) {
     chips.push({ key: "query", label: `“${filters.query.trim()}”` });
