@@ -53,9 +53,11 @@ const PANELS: Panel[] = [
 ];
 
 /**
- * "The Lineup" — sticky card stack. Every panel pins to the viewport via
- * position: sticky, the next one slides over it while the previous settles
- * back and dims. Native scroll only, so it stays buttery with Lenis.
+ * "The Lineup" — five rounded full-bleed panels on plain vertical scroll.
+ * Each card scales/fades in as it enters, its jersey drifts in parallax,
+ * and the content sits vertically centered, alternating sides per panel.
+ * No pinning, no sticky, no CSS transform classes — every transform is
+ * GSAP-owned, so nothing can fight the smooth scroller.
  */
 export default function CategoryExplorer() {
   const t = useT();
@@ -67,46 +69,56 @@ export default function CategoryExplorer() {
       return;
     }
 
-    const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-stack-card]"));
     const tweens: gsap.core.Tween[] = [];
+    const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-panel-card]"));
 
     cards.forEach((card, index) => {
-      // Content rises into view once per card
-      const content = card.querySelector("[data-stack-content]");
-      if (content) {
+      // Card settles from slightly small/dim to full presence while entering
+      tweens.push(
+        gsap.fromTo(
+          card,
+          { scale: 0.94, opacity: 0.55 },
+          {
+            scale: 1,
+            opacity: 1,
+            ease: "none",
+            scrollTrigger: { trigger: card, start: "top 92%", end: "top 45%", scrub: 1 },
+          },
+        ),
+      );
+
+      // Jersey drifts slower than the scroll and keeps a slight tilt
+      const jersey = card.querySelector("[data-panel-jersey]");
+      if (jersey) {
+        const tilt = index % 2 === 0 ? 7 : -7;
         tweens.push(
           gsap.fromTo(
-            content,
-            { y: 48, opacity: 0 },
+            jersey,
+            { y: 70, rotation: tilt },
             {
-              y: 0,
-              opacity: 1,
-              duration: 0.8,
-              ease: EASE_OUT,
-              scrollTrigger: { trigger: card, start: "top 65%", once: true },
+              y: -70,
+              rotation: tilt,
+              ease: "none",
+              scrollTrigger: { trigger: card, start: "top bottom", end: "bottom top", scrub: 1 },
             },
           ),
         );
       }
 
-      // While the next card slides over, this one scales back and dims
-      const inner = card.querySelector("[data-stack-inner]");
-      const nextCard = cards[index + 1];
-      if (inner && nextCard) {
+      // Copy rises once when the card is properly on screen
+      const contentItems = card.querySelectorAll("[data-panel-copy] > *");
+      if (contentItems.length > 0) {
         tweens.push(
           gsap.fromTo(
-            inner,
-            { scale: 1, opacity: 1 },
+            contentItems,
+            { y: 36, opacity: 0 },
             {
-              scale: 0.92,
-              opacity: 0.4,
-              ease: "none",
-              scrollTrigger: {
-                trigger: nextCard,
-                start: "top bottom",
-                end: "top top",
-                scrub: true,
-              },
+              y: 0,
+              opacity: 1,
+              duration: 0.7,
+              stagger: 0.09,
+              ease: EASE_OUT,
+              scrollTrigger: { trigger: card, start: "top 70%", once: true },
             },
           ),
         );
@@ -122,48 +134,73 @@ export default function CategoryExplorer() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative" aria-label="Shop by category">
-      {PANELS.map((panel, index) => (
-        <div
-          key={panel.titleKey}
-          data-stack-card
-          className="sticky top-0 h-svh"
-          style={{ zIndex: index + 1 }}
-        >
-          <div
-            data-stack-inner
-            className="relative flex h-full w-full items-end overflow-hidden will-change-transform"
-            style={{ background: panel.background }}
-          >
-            <div
-              aria-hidden="true"
-              className="absolute right-[6%] top-1/2 w-[52%] max-w-[440px] -translate-y-1/2 rotate-6 opacity-40 motion-safe:animate-[float-slow_8s_ease-in-out_infinite]"
+    <section
+      ref={sectionRef}
+      className="mx-auto max-w-[1400px] px-4 py-10 md:px-8 md:py-16"
+      aria-label="Shop by category"
+    >
+      <div className="flex flex-col gap-4 md:gap-6">
+        {PANELS.map((panel, index) => {
+          const isJerseyRight = index % 2 === 0;
+          return (
+            <article
+              key={panel.titleKey}
+              data-panel-card
+              className="relative flex min-h-[70vh] items-center overflow-hidden rounded-3xl md:min-h-[82vh]"
+              style={{ background: panel.background, willChange: "transform" }}
             >
-              <JerseyGraphic colors={panel.colors} />
-            </div>
-            <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
+              {/* Oversized watermark number */}
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute top-4 font-jersey text-[26vw] font-semibold leading-none text-white/[0.05] md:text-[14rem] ${
+                  isJerseyRight ? "left-6" : "right-6"
+                }`}
+              >
+                0{index + 1}
+              </span>
 
-            <div data-stack-content className="relative z-10 w-full p-6 md:p-12">
-              <p className="mb-2 font-jersey text-sm font-semibold tracking-[0.3em] text-white/50 tnum">
-                0{index + 1} / 0{PANELS.length}
-              </p>
-              <h3
-                className="font-display font-semibold text-white mix-blend-difference"
-                style={{ fontSize: "clamp(36px, 5vw, 64px)" }}
+              {/* Jersey, vertically centered by flex, parallax-driven by GSAP */}
+              <div
+                aria-hidden="true"
+                className={`absolute inset-y-0 flex w-[55%] max-w-[430px] items-center opacity-50 md:opacity-70 ${
+                  isJerseyRight ? "right-[4%] md:right-[7%]" : "left-[4%] md:left-[7%]"
+                }`}
               >
-                {t(panel.titleKey)}
-              </h3>
-              <TransitionLink
-                href={panel.href}
-                className="group mt-3 inline-flex items-center gap-2 text-sm font-medium text-white/90 transition-colors hover:text-white"
+                <div data-panel-jersey className="w-full">
+                  <JerseyGraphic colors={panel.colors} />
+                </div>
+              </div>
+
+              <div aria-hidden="true" className="absolute inset-0 bg-black/40" />
+
+              {/* Copy: vertically centered, opposite the jersey */}
+              <div
+                data-panel-copy
+                className={`relative z-10 flex w-full flex-col gap-4 p-8 md:p-16 ${
+                  isJerseyRight ? "items-start text-left" : "items-start text-left md:items-end md:text-right"
+                }`}
               >
-                {t("cat.explore")}
-                <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span>
-              </TransitionLink>
-            </div>
-          </div>
-        </div>
-      ))}
+                <p className="font-jersey text-sm font-semibold tracking-[0.35em] text-white/60 tnum">
+                  0{index + 1} / 0{PANELS.length}
+                </p>
+                <h3
+                  className="font-display font-semibold text-white"
+                  style={{ fontSize: "clamp(40px, 6vw, 76px)", lineHeight: 1.05 }}
+                >
+                  {t(panel.titleKey)}
+                </h3>
+                <TransitionLink
+                  href={panel.href}
+                  className="group inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                >
+                  {t("cat.explore")}
+                  <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span>
+                </TransitionLink>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }
