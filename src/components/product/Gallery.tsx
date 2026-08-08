@@ -98,6 +98,7 @@ export default function Gallery({
           src={active.src}
           alt={`${product.team} ${product.name}`}
           fill
+          unoptimized
           sizes="(min-width: 1024px) 45vw, 90vw"
           className="object-contain"
         />
@@ -129,7 +130,7 @@ export default function Gallery({
             }`}
           >
             {"src" in view ? (
-              <Image src={view.src} alt="" fill sizes="80px" className="object-cover" />
+              <Image src={view.src} alt="" fill unoptimized sizes="80px" className="object-cover" />
             ) : (
               <JerseyGraphic
                 colors={view.colors}

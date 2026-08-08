@@ -52,7 +52,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not prepare the image bucket" }, { status: 502 });
   }
 
-  const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
+  const safeName = file.name
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/\.{2,}/g, ".")
+    .slice(-60);
   const path = `${Date.now().toString(36)}-${safeName}`;
   const upload = await supabaseStorage(`object/${BUCKET}/${path}`, {
     method: "POST",

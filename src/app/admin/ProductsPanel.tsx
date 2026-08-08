@@ -161,68 +161,83 @@ export default function ProductsPanel() {
         </p>
       ) : null}
 
-      <ul className="flex flex-col gap-3">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
         {rows.map((row) => (
           <li
             key={row.id}
-            className={`flex items-center gap-4 rounded-2xl border border-line bg-card p-4 ${
-              row.is_active ? "" : "opacity-50"
+            className={`flex flex-col overflow-hidden rounded-2xl border border-line bg-card ${
+              row.is_active ? "" : "opacity-60"
             }`}
           >
-            <span className="h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-elevated p-1">
+            <div className="relative aspect-[3/4] bg-elevated">
               {row.data.images?.[0] ? (
                 <Image
                   src={row.data.images[0]}
-                  alt=""
-                  width={48}
-                  height={64}
-                  className="h-full w-full rounded object-cover"
+                  alt={`${row.data.team} ${row.data.name}`}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 240px, 45vw"
+                  className="object-cover"
                 />
               ) : (
-                <JerseyGraphic colors={row.data.colors} />
+                <div className="flex h-full w-full items-center justify-center p-4">
+                  <JerseyGraphic colors={row.data.colors} className="h-full w-full" />
+                </div>
               )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">
-                {row.data.team} · {row.data.name}
-              </p>
-              <p className="text-xs text-secondary tnum">
+              {!row.is_active ? (
+                <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                  Hidden
+                </span>
+              ) : null}
+              {row.data.badge ? (
+                <span
+                  className={`absolute right-2 top-2 rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white ${
+                    row.data.badge === "sale" ? "bg-accent" : "bg-black/70"
+                  }`}
+                >
+                  {row.data.badge}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex flex-1 flex-col gap-1 p-3">
+              <p className="truncate text-xs uppercase tracking-wider text-secondary">{row.data.team}</p>
+              <p className="truncate text-sm font-medium">{row.data.name}</p>
+              <p className="text-sm tnum">
                 {row.data.salePrice ? (
                   <>
-                    {formatPrice(row.data.salePrice)}{" "}
+                    <span className="text-accent">{formatPrice(row.data.salePrice)}</span>{" "}
                     <s className="text-muted">{formatPrice(row.data.price)}</s>
                   </>
                 ) : (
                   formatPrice(row.data.price)
-                )}{" "}
-                · {row.data.category}
-                {row.is_active ? "" : " · hidden"}
+                )}
               </p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <button
-                type="button"
-                onClick={() => void handleToggleActive(row)}
-                disabled={isBusy}
-                className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-secondary transition-colors hover:border-primary hover:text-primary"
-              >
-                {row.is_active ? "Hide" : "Show"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditor({ mode: "edit", row })}
-                className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleDelete(row)}
-                disabled={isBusy}
-                className="rounded-lg border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
-              >
-                Delete
-              </button>
+              <div className="mt-auto flex gap-1.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditor({ mode: "edit", row })}
+                  className="flex-1 rounded-lg border border-line px-2 py-1.5 text-xs font-medium transition-colors hover:border-primary"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleToggleActive(row)}
+                  disabled={isBusy}
+                  className="flex-1 rounded-lg border border-line px-2 py-1.5 text-xs font-medium text-secondary transition-colors hover:border-primary hover:text-primary"
+                >
+                  {row.is_active ? "Hide" : "Show"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDelete(row)}
+                  disabled={isBusy}
+                  aria-label={`Delete ${row.data.team} ${row.data.name}`}
+                  className="rounded-lg border border-accent/40 px-2.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           </li>
         ))}

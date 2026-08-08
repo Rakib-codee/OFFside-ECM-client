@@ -67,6 +67,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
                 src={product.images[0]}
                 alt={`${product.team} ${product.name}`}
                 fill
+                unoptimized
                 sizes="(min-width: 768px) 320px, 70vw"
                 className="object-cover"
               />
