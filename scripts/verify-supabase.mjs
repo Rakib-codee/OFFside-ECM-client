@@ -115,5 +115,38 @@ const cleanup = await fetch(`${url}/rest/v1/orders?id=eq.${inserted.id}`, {
 });
 console.log(cleanup.ok ? "✓ test order removed" : `⚠ cleanup returned HTTP ${cleanup.status}`);
 
+// 4. Catalog tables (products/settings) — optional, power the admin catalog editor
+const CATALOG_SQL = `
+create table products (
+  id text primary key,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table products enable row level security;
+
+create table settings (
+  id int primary key,
+  data jsonb not null
+);
+alter table settings enable row level security;`;
+
+let missingCatalog = false;
+for (const table of ["products", "settings"]) {
+  const check = await fetch(`${url}/rest/v1/${table}?select=*&limit=1`, { headers });
+  if (check.ok) {
+    console.log(`✓ ${table} table exists`);
+  } else {
+    missingCatalog = true;
+    console.log(`⚠ ${table} table missing`);
+  }
+}
+if (missingCatalog) {
+  console.log("\n⚠ Admin catalog editing is inactive. To enable it, run this in the Supabase SQL editor:\n");
+  console.log(CATALOG_SQL);
+  console.log("\n  The shop keeps working with the built-in catalog meanwhile.");
+}
+
 console.log("\n✅ Database wiring is complete — real orders will be saved.");
 console.log("   Set the same env vars in Vercel when you deploy.");

@@ -62,8 +62,9 @@ npm run lint    # ESLint
   transaction ID) and optional **SSLCommerz** online payment
 - **Orders** — validated and repriced server-side, saved to Supabase, emailed to the
   shop, and handed to the customer's WhatsApp/Messenger from the success page
-- **Admin** — password-protected `/admin` dashboard with order status flow
-  (new → confirmed → shipped → delivered)
+- **Admin** — password-protected `/admin` dashboard: orders with status flow,
+  stats, filters and CSV export, plus a **catalog editor** — add/edit/delete
+  products, upload photos, set prices and delivery charges without touching code
 
 ### Craft
 - Custom lerp cursor with clickable/drag states (fine pointers only)
@@ -91,8 +92,13 @@ src/
 
 ## Adding Your Products
 
-All products live in `src/lib/products.ts` — each entry defines its name (English +
-Bangla), colorway, pricing in Taka, badge and per-size stock.
+The easiest way: open **/admin → Products** and manage everything there (add,
+edit, hide, delete, upload photos). Products save to Supabase and the site
+updates within seconds. Use "Import built-in catalog" once to start from the
+12 sample jerseys. Delivery charges live in **/admin → Settings**.
+
+The built-in fallback catalog lives in `src/lib/products.ts` — the site uses it
+whenever the database is unconfigured or empty, so the shop can never be blank.
 
 - **Without photos**: the SVG jersey renderer draws the product from its colors —
   no assets needed.
@@ -138,6 +144,22 @@ create table orders (
 );
 alter table orders enable row level security;
 -- No public policies: the site talks to this table only with the service-role key.
+
+-- Catalog managed from /admin (products + delivery charges):
+create table products (
+  id text primary key,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table products enable row level security;
+
+create table settings (
+  id int primary key,
+  data jsonb not null
+);
+alter table settings enable row level security;
 ```
 
 Then copy the project URL and the `service_role` key (Settings → API) into your env.

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import OrderCard from "./OrderCard";
+import ProductsPanel from "./ProductsPanel";
+import SettingsPanel from "./SettingsPanel";
 import StatsCards from "./StatsCards";
 import { SetupNotice } from "./AdminClient";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
@@ -15,6 +17,12 @@ import {
 const POLL_INTERVAL_MS = 30_000;
 
 type StatusFilter = OrderStatus | "all";
+type AdminTab = "orders" | "products" | "settings";
+const TABS: { key: AdminTab; label: string }[] = [
+  { key: "orders", label: "Orders" },
+  { key: "products", label: "Products" },
+  { key: "settings", label: "Settings" },
+];
 
 interface DashboardProps {
   isDbReady: boolean;
@@ -22,6 +30,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ isDbReady, initialOrders }: DashboardProps) {
+  const [tab, setTab] = useState<AdminTab>("orders");
   const [orders, setOrders] = useState<AdminOrder[] | null>(initialOrders);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -99,17 +108,6 @@ export default function Dashboard({ isDbReady, initialOrders }: DashboardProps) 
     window.location.reload();
   };
 
-  if (!isDbReady) {
-    return (
-      <SetupNotice title="Database is not connected yet">
-        Create a free Supabase project, run the SQL from the README to create the{" "}
-        <code>orders</code> table, then set <code className="text-accent">SUPABASE_URL</code> and{" "}
-        <code className="text-accent">SUPABASE_SERVICE_ROLE_KEY</code> in your environment.
-        Until then, orders still reach you via WhatsApp/Messenger and email.
-      </SetupNotice>
-    );
-  }
-
   const trimmedQuery = query.trim().toLowerCase();
   const filtered = (orders ?? []).filter((order) => {
     if (statusFilter !== "all" && order.status !== statusFilter) {
@@ -130,8 +128,60 @@ export default function Dashboard({ isDbReady, initialOrders }: DashboardProps) 
       ? (orders ?? []).length
       : (orders ?? []).filter((order) => order.status === status).length;
 
+  const tabBar = (
+    <div className="mb-8 flex gap-2 border-b border-line">
+      {TABS.map((entry) => (
+        <button
+          key={entry.key}
+          type="button"
+          onClick={() => setTab(entry.key)}
+          aria-pressed={tab === entry.key}
+          className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+            tab === entry.key
+              ? "border-accent text-primary"
+              : "border-transparent text-secondary hover:text-primary"
+          }`}
+        >
+          {entry.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (tab === "products") {
+    return (
+      <div>
+        {tabBar}
+        <ProductsPanel />
+      </div>
+    );
+  }
+  if (tab === "settings") {
+    return (
+      <div>
+        {tabBar}
+        <SettingsPanel />
+      </div>
+    );
+  }
+
+  if (!isDbReady) {
+    return (
+      <div>
+        {tabBar}
+        <SetupNotice title="Database is not connected yet">
+          Create a free Supabase project, run the SQL from the README to create the{" "}
+          <code>orders</code> table, then set <code className="text-accent">SUPABASE_URL</code> and{" "}
+          <code className="text-accent">SUPABASE_SERVICE_ROLE_KEY</code> in your environment.
+          Until then, orders still reach you via WhatsApp/Messenger and email.
+        </SetupNotice>
+      </div>
+    );
+  }
+
   return (
     <div>
+      {tabBar}
       <StatsCards orders={orders ?? []} />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
