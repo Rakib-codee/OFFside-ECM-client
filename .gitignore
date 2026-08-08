@@ -49,3 +49,8 @@ AGENTS.md
 
 # original logo source (optimized copies live in public/ and src/app/)
 /logo.png
+
+# local dev tooling — not part of the client deliverable
+.mcp.json
+.agents/
+skills-lock.json
