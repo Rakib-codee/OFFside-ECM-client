@@ -56,12 +56,14 @@ npm run lint    # ESLint
   pills with sold-out states; debounced live customization preview; morphing
   add-to-cart; interactive sizing guide; reviews breakdown; related kits
 - **Cart** — animated drawer (side panel on desktop, bottom sheet on mobile) with
-  quantity steppers and free-shipping threshold
-- **Checkout** — four steps with animated progress, floating-label validation,
-  card-type detection, wallet buttons and a confetti order confirmation
-
-> The checkout is a demo flow — no real payment is processed. Wire up Stripe (or a
-> similar provider) before going live.
+  quantity steppers and free-delivery threshold (৳2,500)
+- **Checkout** — four steps built for Bangladesh: BD phone validation, Inside/Outside
+  Dhaka delivery zones, **Cash on Delivery**, **bKash/Nagad Send Money** (with
+  transaction ID) and optional **SSLCommerz** online payment
+- **Orders** — validated and repriced server-side, saved to Supabase, emailed to the
+  shop, and handed to the customer's WhatsApp/Messenger from the success page
+- **Admin** — password-protected `/admin` dashboard with order status flow
+  (new → confirmed → shipped → delivered)
 
 ### Craft
 - Custom lerp cursor with clickable/drag states (fine pointers only)
@@ -87,10 +89,64 @@ src/
   lib/               # Product catalog, stores, motion helpers, formatting
 ```
 
-## Customizing the Catalog
+## Adding Your Products
 
-All products live in `src/lib/products.ts` — each entry defines its colorway, pricing,
-badge and stock. Jersey visuals are rendered from those colors by
-`src/components/product/JerseyGraphic.tsx`, so adding a product needs no image assets.
-To use real photography later, swap the `JerseyGraphic` usage inside
-`ProductCard`/`Gallery` for `next/image`.
+All products live in `src/lib/products.ts` — each entry defines its name (English +
+Bangla), colorway, pricing in Taka, badge and per-size stock.
+
+- **Without photos**: the SVG jersey renderer draws the product from its colors —
+  no assets needed.
+- **With real photos**: drop images in `public/products/` and add
+  `images: ["/products/my-jersey-front.jpg", "/products/my-jersey-back.jpg"]` to the
+  product. Cards and the gallery switch to photos automatically.
+
+## Going Live — Environment Variables
+
+Copy `.env.example` to `.env.local` (or set these in Vercel). Everything is optional;
+features unlock as you add them:
+
+| Variable | Unlocks |
+|---|---|
+| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | Orders saved to the database |
+| `ADMIN_PASSWORD` | The `/admin` order dashboard |
+| `RESEND_API_KEY` + `ORDER_NOTIFY_EMAIL` | Email for every new order |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | "Send order on WhatsApp" button (e.g. `8801XXXXXXXXX`) |
+| `NEXT_PUBLIC_BKASH_NUMBER` / `NEXT_PUBLIC_NAGAD_NUMBER` | Send Money numbers at checkout |
+| `NEXT_PUBLIC_SSLCOMMERZ_ENABLED` + `SSLCOMMERZ_STORE_ID`/`SSLCOMMERZ_STORE_PASSWORD` | Online payment option |
+
+Without any of these, checkout still works: the order is validated, gets an order
+number, and the customer is guided to Messenger/WhatsApp to confirm it.
+
+### Supabase setup (once)
+
+Create a free project at [supabase.com](https://supabase.com), open the SQL editor and run:
+
+```sql
+create table orders (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  order_no text not null,
+  customer jsonb not null,
+  items jsonb not null,
+  subtotal int not null,
+  shipping int not null,
+  total int not null,
+  payment_method text not null,
+  payment_ref text,
+  status text not null default 'new',
+  locale text
+);
+alter table orders enable row level security;
+-- No public policies: the site talks to this table only with the service-role key.
+```
+
+Then copy the project URL and the `service_role` key (Settings → API) into your env.
+
+### Go-live checklist
+
+1. Push to GitHub and import the repo at [vercel.com/new](https://vercel.com/new)
+2. Add the env variables above in Vercel
+3. Set a strong `ADMIN_PASSWORD` and bookmark `/admin`
+4. Replace placeholder products with real jerseys, photos and prices
+5. Test one Cash-on-Delivery order end to end
+6. (Later) register an SSLCommerz merchant account for automated online payment
