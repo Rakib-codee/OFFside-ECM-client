@@ -101,7 +101,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-3 px-5 py-6 text-sm text-muted md:flex-row md:px-8">
-          <Logo className="!text-base" />
+          <Logo size="sm" />
           <p>
             © {new Date().getFullYear()} OFFside. {t("footer.madeForFans")}
           </p>
