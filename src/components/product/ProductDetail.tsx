@@ -33,7 +33,10 @@ export default function ProductDetail({ product }: { product: Product }) {
   const openCart = useUiStore((state) => state.openCart);
 
   const colors = colorway === "alt" && product.altColors ? product.altColors : product.colors;
-  const unitPrice = getEffectivePrice(product) + (isCustomizing ? CUSTOMIZATION_PRICE : 0);
+  // Printing is only charged once a name or number is actually entered —
+  // matches the server-side pricing in validateAndPriceOrder
+  const hasCustomization = isCustomizing && Boolean(customName || customNumber);
+  const unitPrice = getEffectivePrice(product) + (hasCustomization ? CUSTOMIZATION_PRICE : 0);
 
   // Typing a name or number flips the gallery to the back view
   const handleNameChange = useCallback((name: string) => {
@@ -100,7 +103,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             ) : (
               formatPrice(product.price)
             )}
-            {isCustomizing ? (
+            {hasCustomization ? (
               <span className="ml-2 text-sm text-secondary">
                 +{formatPrice(CUSTOMIZATION_PRICE)} {t("product.printing")}
               </span>

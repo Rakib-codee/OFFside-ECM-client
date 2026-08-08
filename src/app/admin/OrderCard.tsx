@@ -88,7 +88,11 @@ export default function OrderCard({ order, isNew, onStatusChange }: OrderCardPro
           return (
             <li key={index} className="flex items-center gap-3 py-1.5 text-sm text-secondary">
               {product ? (
-                <span className="h-10 w-8 shrink-0 rounded bg-elevated p-0.5">
+                <span
+                  className={`shrink-0 rounded bg-elevated p-0.5 ${
+                    isCustomized ? "h-14 w-11" : "h-10 w-8"
+                  }`}
+                >
                   <JerseyGraphic
                     colors={product.colors}
                     view={isCustomized ? "back" : "front"}
@@ -97,10 +101,16 @@ export default function OrderCard({ order, isNew, onStatusChange }: OrderCardPro
                   />
                 </span>
               ) : null}
-              <span className="min-w-0 flex-1 truncate">
-                {item.quantity}× {item.team} {item.name} · {item.size}
-                {item.customName ? ` · ${item.customName}` : ""}
-                {item.customNumber ? ` #${item.customNumber}` : ""}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">
+                  {item.quantity}× {item.team} {item.name} · {item.size}
+                </span>
+                {isCustomized ? (
+                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">
+                    🖨 Print: {item.customName ?? ""}
+                    {item.customNumber ? ` #${item.customNumber}` : ""}
+                  </span>
+                ) : null}
               </span>
               <span className="tnum">{formatPrice(item.unitPrice * item.quantity)}</span>
             </li>
