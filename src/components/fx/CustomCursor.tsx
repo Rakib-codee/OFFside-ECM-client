@@ -99,7 +99,8 @@ export default function CustomCursor() {
       />
       <div
         ref={dragRef}
-        className="absolute -left-5 -top-5 flex h-10 w-10 scale-0 items-center justify-center rounded-full bg-white text-xs font-medium text-black opacity-0"
+        className="absolute -left-5 -top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-xs font-medium text-black opacity-0"
+        style={{ transform: "scale(0)" }}
       >
         ↔
       </div>

@@ -33,6 +33,22 @@ export default function CartDrawer() {
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Park the panel off-screen with GSAP itself (CSS transform/translate
+  // classes would fight GSAP's transform model), then reveal it. Must run
+  // before the open/close effect below.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) {
+      return;
+    }
+    const isMobile = window.matchMedia(MOBILE_QUERY).matches;
+    gsap.set(panel, {
+      xPercent: isMobile ? 0 : 100,
+      yPercent: isMobile ? 100 : 0,
+      visibility: "visible",
+    });
+  }, []);
+
   // Slide the panel in from the right (bottom sheet on mobile)
   useEffect(() => {
     const backdrop = backdropRef.current;
@@ -95,7 +111,7 @@ export default function CartDrawer() {
         role="dialog"
         aria-modal="true"
         aria-label={t("cart.title")}
-        className="fixed bottom-0 right-0 z-[140] flex h-[92dvh] w-full translate-y-full flex-col rounded-t-2xl border-t border-line bg-card md:top-0 md:h-full md:max-w-md md:translate-x-full md:translate-y-0 md:rounded-none md:border-l md:border-t-0"
+        className="invisible fixed bottom-0 right-0 z-[140] flex h-[92dvh] w-full flex-col rounded-t-2xl border-t border-line bg-card md:top-0 md:h-full md:max-w-md md:rounded-none md:border-l md:border-t-0"
       >
         <header className="flex items-center justify-between border-b border-line px-6 py-5">
           <h2 className="font-display text-lg font-semibold">
