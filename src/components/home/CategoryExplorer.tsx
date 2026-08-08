@@ -5,9 +5,10 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import TransitionLink from "@/components/fx/TransitionLink";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
-import type { JerseyColors } from "@/lib/types";
 import { useT } from "@/lib/i18n/locale";
 import type { MessageKey } from "@/lib/i18n/dictionary";
+import { EASE_OUT, prefersReducedMotion } from "@/lib/motion";
+import type { JerseyColors } from "@/lib/types";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -52,85 +53,100 @@ const PANELS: Panel[] = [
 ];
 
 /**
- * "The Lineup" — five full-height panels that scroll horizontally while the
- * section stays pinned. Collapses to a snap carousel on mobile.
+ * "The Lineup" — sticky card stack. Every panel pins to the viewport via
+ * position: sticky, the next one slides over it while the previous settles
+ * back and dims. Native scroll only, so it stays buttery with Lenis.
  */
 export default function CategoryExplorer() {
   const t = useT();
   const sectionRef = useRef<HTMLElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
-    const track = trackRef.current;
-    if (!section || !track) {
+    if (!section || prefersReducedMotion()) {
       return;
     }
 
-    const mm = gsap.matchMedia();
-    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-      const panelCount = PANELS.length;
-      const scrollTween = gsap.to(track, {
-        xPercent: -100 * ((panelCount - 1) / panelCount),
-        ease: "none",
-        scrollTrigger: {
-          trigger: section,
-          pin: true,
-          scrub: 1,
-          end: () => `+=${track.scrollWidth}`,
-          invalidateOnRefresh: true,
-        },
-      });
+    const cards = Array.from(section.querySelectorAll<HTMLElement>("[data-stack-card]"));
+    const tweens: gsap.core.Tween[] = [];
 
-      // Parallax: jerseys drift slower than the panels themselves
-      const jerseyTweens = Array.from(track.querySelectorAll("[data-panel-jersey]")).map(
-        (jersey) =>
+    cards.forEach((card, index) => {
+      // Content rises into view once per card
+      const content = card.querySelector("[data-stack-content]");
+      if (content) {
+        tweens.push(
           gsap.fromTo(
-            jersey,
-            { xPercent: -18 },
+            content,
+            { y: 48, opacity: 0 },
             {
-              xPercent: 18,
+              y: 0,
+              opacity: 1,
+              duration: 0.8,
+              ease: EASE_OUT,
+              scrollTrigger: { trigger: card, start: "top 65%", once: true },
+            },
+          ),
+        );
+      }
+
+      // While the next card slides over, this one scales back and dims
+      const inner = card.querySelector("[data-stack-inner]");
+      const nextCard = cards[index + 1];
+      if (inner && nextCard) {
+        tweens.push(
+          gsap.fromTo(
+            inner,
+            { scale: 1, opacity: 1 },
+            {
+              scale: 0.92,
+              opacity: 0.4,
               ease: "none",
               scrollTrigger: {
-                trigger: section,
-                scrub: 1,
-                start: "top top",
-                end: () => `+=${track.scrollWidth}`,
+                trigger: nextCard,
+                start: "top bottom",
+                end: "top top",
+                scrub: true,
               },
             },
           ),
-      );
-
-      return () => {
-        scrollTween.kill();
-        jerseyTweens.forEach((tween) => tween.kill());
-      };
+        );
+      }
     });
 
-    return () => mm.revert();
+    return () => {
+      tweens.forEach((tween) => {
+        tween.scrollTrigger?.kill();
+        tween.kill();
+      });
+    };
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden" aria-label="Shop by category">
-      <div
-        ref={trackRef}
-        className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto md:snap-none md:overflow-visible"
-      >
-        {PANELS.map((panel) => (
-          <article
-            key={panel.titleKey}
-            className="relative flex h-[72vh] w-[85vw] shrink-0 snap-start items-end overflow-hidden md:h-screen md:w-screen"
+    <section ref={sectionRef} className="relative" aria-label="Shop by category">
+      {PANELS.map((panel, index) => (
+        <div
+          key={panel.titleKey}
+          data-stack-card
+          className="sticky top-0 h-svh"
+          style={{ zIndex: index + 1 }}
+        >
+          <div
+            data-stack-inner
+            className="relative flex h-full w-full items-end overflow-hidden will-change-transform"
             style={{ background: panel.background }}
           >
             <div
-              data-panel-jersey
               aria-hidden="true"
-              className="absolute right-[8%] top-1/2 w-[46%] max-w-[420px] -translate-y-1/2 rotate-6 opacity-40"
+              className="absolute right-[6%] top-1/2 w-[52%] max-w-[440px] -translate-y-1/2 rotate-6 opacity-40 motion-safe:animate-[float-slow_8s_ease-in-out_infinite]"
             >
               <JerseyGraphic colors={panel.colors} />
             </div>
             <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
-            <div className="relative z-10 p-6 md:p-12">
+
+            <div data-stack-content className="relative z-10 w-full p-6 md:p-12">
+              <p className="mb-2 font-jersey text-sm font-semibold tracking-[0.3em] text-white/50 tnum">
+                0{index + 1} / 0{PANELS.length}
+              </p>
               <h3
                 className="font-display font-semibold text-white mix-blend-difference"
                 style={{ fontSize: "clamp(36px, 5vw, 64px)" }}
@@ -145,9 +161,9 @@ export default function CategoryExplorer() {
                 <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span>
               </TransitionLink>
             </div>
-          </article>
-        ))}
-      </div>
+          </div>
+        </div>
+      ))}
     </section>
   );
 }
