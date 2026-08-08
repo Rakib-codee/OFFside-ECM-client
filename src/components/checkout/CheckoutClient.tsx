@@ -9,43 +9,27 @@ import QtyStepper from "@/components/cart/QtyStepper";
 import TransitionLink from "@/components/fx/TransitionLink";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { formatPrice } from "@/lib/format";
-import { FREE_SHIPPING_THRESHOLD, SHIPPING_FLAT_RATE, useCartStore } from "@/lib/store/cart";
 import { useLocale, useT } from "@/lib/i18n/locale";
 import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
+import { shippingFor, type DeliveryZone } from "@/lib/shipping";
+import { BKASH_NUMBER, IS_SSLCOMMERZ_ENABLED, NAGAD_NUMBER } from "@/lib/site";
+import { useCartStore } from "@/lib/store/cart";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const EXPRESS_SHIPPING_RATE = 15;
+const BD_PHONE_PATTERN = /^01[3-9]\d{8}$/;
 export const ORDER_STORAGE_KEY = "offside-order";
 
-type ShippingMethod = "standard" | "express";
+type PaymentMethod = "cod" | "bkash" | "nagad" | "sslcommerz";
 
 interface InfoForm {
+  name: string;
+  phone: string;
   email: string;
-  firstName: string;
-  lastName: string;
   address: string;
-  city: string;
-  postal: string;
-  country: string;
+  district: string;
 }
 
-const EMPTY_INFO: InfoForm = {
-  email: "",
-  firstName: "",
-  lastName: "",
-  address: "",
-  city: "",
-  postal: "",
-  country: "",
-};
-
-function detectCardType(cardNumber: string): string | null {
-  const digits = cardNumber.replace(/\s/g, "");
-  if (/^4/.test(digits)) return "VISA";
-  if (/^5[1-5]/.test(digits)) return "Mastercard";
-  if (/^3[47]/.test(digits)) return "AMEX";
-  return null;
-}
+const EMPTY_INFO: InfoForm = { name: "", phone: "", email: "", address: "", district: "" };
 
 export default function CheckoutClient() {
   const t = useT();
@@ -59,15 +43,16 @@ export default function CheckoutClient() {
   const [info, setInfo] = useState<InfoForm>(EMPTY_INFO);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [errorNonce, setErrorNonce] = useState(0);
-  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("standard");
-  const [card, setCard] = useState({ name: "", number: "", expiry: "", cvc: "" });
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [zone, setZone] = useState<DeliveryZone>("dhaka");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [trxId, setTrxId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const standardShipping =
-    subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT_RATE;
-  const shippingCost = shippingMethod === "express" ? EXPRESS_SHIPPING_RATE : standardShipping;
-  const cardType = detectCardType(card.number);
+  const shippingCost = shippingFor(zone, subtotal);
+  const total = subtotal + shippingCost;
+  const isManualPayment = paymentMethod === "bkash" || paymentMethod === "nagad";
 
   const updateInfo = (field: keyof InfoForm, value: string) => {
     setInfo((current) => ({ ...current, [field]: value }));
@@ -83,26 +68,15 @@ export default function CheckoutClient() {
 
   const validateInfo = (): boolean => {
     const nextErrors: Record<string, string> = {};
-    if (!EMAIL_PATTERN.test(info.email.trim())) nextErrors.email = t("checkout.validEmail");
-    if (!info.firstName.trim()) nextErrors.firstName = t("checkout.required");
-    if (!info.lastName.trim()) nextErrors.lastName = t("checkout.required");
-    if (!info.address.trim()) nextErrors.address = t("checkout.required");
-    if (!info.city.trim()) nextErrors.city = t("checkout.required");
-    if (!info.postal.trim()) nextErrors.postal = t("checkout.required");
-    if (!info.country.trim()) nextErrors.country = t("checkout.required");
-    if (Object.keys(nextErrors).length > 0) {
-      failValidation(nextErrors);
-      return false;
+    if (info.name.trim().length < 2) nextErrors.name = t("checkout.required");
+    if (!BD_PHONE_PATTERN.test(info.phone.replace(/[\s-]/g, ""))) {
+      nextErrors.phone = t("checkout.validPhone");
     }
-    return true;
-  };
-
-  const validateCard = (): boolean => {
-    const nextErrors: Record<string, string> = {};
-    if (!card.name.trim()) nextErrors.cardName = t("checkout.required");
-    if (card.number.replace(/\s/g, "").length < 15) nextErrors.cardNumber = t("checkout.validCard");
-    if (!/^\d{2}\/\d{2}$/.test(card.expiry)) nextErrors.cardExpiry = "MM/YY";
-    if (card.cvc.length < 3) nextErrors.cardCvc = t("checkout.validCvc");
+    if (info.email.trim() && !EMAIL_PATTERN.test(info.email.trim())) {
+      nextErrors.email = t("checkout.validEmail");
+    }
+    if (info.address.trim().length < 5) nextErrors.address = t("checkout.required");
+    if (info.district.trim().length < 2) nextErrors.district = t("checkout.required");
     if (Object.keys(nextErrors).length > 0) {
       failValidation(nextErrors);
       return false;
@@ -112,27 +86,96 @@ export default function CheckoutClient() {
 
   const goToStep = (nextStep: number) => {
     setErrors({});
+    setSubmitError("");
     setStep(nextStep);
     window.scrollTo({ top: 0 });
   };
 
-  const placeOrder = () => {
-    setIsPlacingOrder(true);
-    const orderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-    sessionStorage.setItem(
-      ORDER_STORAGE_KEY,
-      JSON.stringify({
-        number: orderNumber,
-        email: info.email,
-        total: subtotal + shippingCost,
-        itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-      }),
-    );
-    clearCart();
-    router.push("/checkout/success");
+  const buildPayload = () => ({
+    customer: {
+      name: info.name.trim(),
+      phone: info.phone.replace(/[\s-]/g, ""),
+      email: info.email.trim() || undefined,
+      address: info.address.trim(),
+      district: info.district.trim(),
+    },
+    zone,
+    paymentMethod,
+    paymentRef: isManualPayment ? trxId.trim() : undefined,
+    items: items.map((item) => ({
+      productId: item.productId,
+      size: item.size,
+      quantity: item.quantity,
+      customName: item.customName,
+      customNumber: item.customNumber,
+    })),
+    locale,
+  });
+
+  const placeOrder = async () => {
+    if (isManualPayment && trxId.trim().length < 4) {
+      failValidation({ trxId: t("checkout.validTrx") });
+      return;
+    }
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      if (paymentMethod === "sslcommerz") {
+        const response = await fetch("/api/payment/sslcommerz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPayload()),
+        });
+        const session = (await response.json()) as { gatewayUrl?: string; error?: string };
+        if (!response.ok || !session.gatewayUrl) {
+          throw new Error(session.error || "gateway");
+        }
+        window.location.assign(session.gatewayUrl);
+        return;
+      }
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload()),
+      });
+      const result = (await response.json()) as {
+        orderNo?: string;
+        total?: number;
+        error?: string;
+      };
+      if (!response.ok || !result.orderNo) {
+        throw new Error(result.error || "order");
+      }
+
+      const summary = items
+        .map(
+          (item) =>
+            `${item.quantity}× ${item.team} ${item.name} (${item.size}` +
+            `${item.customName ? `, ${item.customName}` : ""}` +
+            `${item.customNumber ? ` #${item.customNumber}` : ""})`,
+        )
+        .join("; ");
+      sessionStorage.setItem(
+        ORDER_STORAGE_KEY,
+        JSON.stringify({
+          number: result.orderNo,
+          email: info.email.trim(),
+          total: result.total ?? total,
+          itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+          summary,
+        }),
+      );
+      clearCart();
+      router.push("/checkout/success");
+    } catch {
+      setSubmitError(t("checkout.orderFailed"));
+      setIsSubmitting(false);
+    }
   };
 
-  if (items.length === 0 && !isPlacingOrder) {
+  if (items.length === 0 && !isSubmitting) {
     return (
       <div className="flex flex-col items-center gap-4 py-24 text-center">
         <div className="w-28 opacity-25">
@@ -152,7 +195,9 @@ export default function CheckoutClient() {
   }
 
   const continueButtonClass =
-    "h-14 w-full rounded-lg bg-cta font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95";
+    "h-14 w-full rounded-lg bg-cta font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60";
+  const backButtonClass =
+    "h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-primary hover:text-primary";
 
   return (
     <div>
@@ -161,7 +206,7 @@ export default function CheckoutClient() {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[60%_1fr]">
         <div>
           {step === 0 ? (
-            <section aria-label="Review cart">
+            <section aria-label={t("checkout.review")}>
               <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.review")}</h2>
               <ul className="mb-8 flex flex-col gap-4">
                 {items.map((item) => (
@@ -175,8 +220,12 @@ export default function CheckoutClient() {
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs uppercase tracking-wider text-secondary">{localizedTeamById(item.productId, item.team, locale)}</p>
-                      <p className="truncate font-medium">{localizedNameById(item.productId, item.name, locale)}</p>
+                      <p className="text-xs uppercase tracking-wider text-secondary">
+                        {localizedTeamById(item.productId, item.team, locale)}
+                      </p>
+                      <p className="truncate font-medium">
+                        {localizedNameById(item.productId, item.name, locale)}
+                      </p>
                       <p className="text-xs text-muted">
                         {t("cart.size")} {item.size}
                         {item.customName ? ` · ${item.customName}` : ""}
@@ -186,7 +235,6 @@ export default function CheckoutClient() {
                     <QtyStepper
                       value={item.quantity}
                       onChange={(next) => setQuantity(item.key, next)}
-                      label={`Quantity for ${item.team} ${item.name}`}
                     />
                     <span className="w-20 text-right font-medium tnum">
                       {formatPrice(item.unitPrice * item.quantity)}
@@ -201,33 +249,35 @@ export default function CheckoutClient() {
           ) : null}
 
           {step === 1 ? (
-            <section aria-label="Contact and address">
+            <section aria-label={t("checkout.yourInfo")}>
               <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.yourInfo")}</h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FloatingField
-                  label={t("checkout.email")}
+                  label={t("checkout.fullName")}
+                  autoComplete="name"
+                  value={info.name}
+                  onChange={(event) => updateInfo("name", event.target.value)}
+                  error={errors.name}
+                  errorNonce={errorNonce}
+                  className="sm:col-span-2"
+                />
+                <FloatingField
+                  label={t("checkout.phone")}
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  value={info.phone}
+                  onChange={(event) => updateInfo("phone", event.target.value)}
+                  error={errors.phone}
+                  errorNonce={errorNonce}
+                />
+                <FloatingField
+                  label={t("checkout.emailOpt")}
                   type="email"
                   autoComplete="email"
                   value={info.email}
                   onChange={(event) => updateInfo("email", event.target.value)}
                   error={errors.email}
-                  errorNonce={errorNonce}
-                  className="sm:col-span-2"
-                />
-                <FloatingField
-                  label={t("checkout.firstName")}
-                  autoComplete="given-name"
-                  value={info.firstName}
-                  onChange={(event) => updateInfo("firstName", event.target.value)}
-                  error={errors.firstName}
-                  errorNonce={errorNonce}
-                />
-                <FloatingField
-                  label={t("checkout.lastName")}
-                  autoComplete="family-name"
-                  value={info.lastName}
-                  onChange={(event) => updateInfo("lastName", event.target.value)}
-                  error={errors.lastName}
                   errorNonce={errorNonce}
                 />
                 <FloatingField
@@ -240,37 +290,17 @@ export default function CheckoutClient() {
                   className="sm:col-span-2"
                 />
                 <FloatingField
-                  label={t("checkout.city")}
+                  label={t("checkout.district")}
                   autoComplete="address-level2"
-                  value={info.city}
-                  onChange={(event) => updateInfo("city", event.target.value)}
-                  error={errors.city}
-                  errorNonce={errorNonce}
-                />
-                <FloatingField
-                  label={t("checkout.postal")}
-                  autoComplete="postal-code"
-                  value={info.postal}
-                  onChange={(event) => updateInfo("postal", event.target.value)}
-                  error={errors.postal}
-                  errorNonce={errorNonce}
-                />
-                <FloatingField
-                  label={t("checkout.country")}
-                  autoComplete="country-name"
-                  value={info.country}
-                  onChange={(event) => updateInfo("country", event.target.value)}
-                  error={errors.country}
+                  value={info.district}
+                  onChange={(event) => updateInfo("district", event.target.value)}
+                  error={errors.district}
                   errorNonce={errorNonce}
                   className="sm:col-span-2"
                 />
               </div>
               <div className="mt-8 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => goToStep(0)}
-                  className="h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-white hover:text-primary"
-                >
+                <button type="button" onClick={() => goToStep(0)} className={backButtonClass}>
                   {t("checkout.back")}
                 </button>
                 <button
@@ -285,53 +315,44 @@ export default function CheckoutClient() {
           ) : null}
 
           {step === 2 ? (
-            <section aria-label="Shipping method">
-              <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.shippingTitle")}</h2>
+            <section aria-label={t("checkout.shippingTitle")}>
+              <h2 className="mb-6 font-display text-2xl font-semibold">
+                {t("checkout.shippingTitle")}
+              </h2>
               <div className="flex flex-col gap-3" role="radiogroup" aria-label={t("checkout.shippingTitle")}>
                 {(
                   [
-                    {
-                      key: "standard" as const,
-                      title: t("checkout.standard"),
-                      detail: t("checkout.standardEta"),
-                      cost: standardShipping,
-                    },
-                    {
-                      key: "express" as const,
-                      title: t("checkout.express"),
-                      detail: t("checkout.expressEta"),
-                      cost: EXPRESS_SHIPPING_RATE,
-                    },
+                    { key: "dhaka" as const, title: t("checkout.insideDhaka"), detail: t("checkout.etaInside") },
+                    { key: "outside" as const, title: t("checkout.outsideDhaka"), detail: t("checkout.etaOutside") },
                   ]
-                ).map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={shippingMethod === option.key}
-                    onClick={() => setShippingMethod(option.key)}
-                    className={`flex items-center justify-between rounded-xl border p-5 text-left transition-colors ${
-                      shippingMethod === option.key
-                        ? "border-accent bg-accent/5"
-                        : "border-line bg-card hover:border-muted"
-                    }`}
-                  >
-                    <span>
-                      <span className="block font-medium">{option.title}</span>
-                      <span className="block text-sm text-secondary">{option.detail}</span>
-                    </span>
-                    <span className="font-medium tnum">
-                      {option.cost === 0 ? t("cart.free") : formatPrice(option.cost)}
-                    </span>
-                  </button>
-                ))}
+                ).map((option) => {
+                  const cost = shippingFor(option.key, subtotal);
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={zone === option.key}
+                      onClick={() => setZone(option.key)}
+                      className={`flex items-center justify-between rounded-xl border p-5 text-left transition-colors ${
+                        zone === option.key
+                          ? "border-accent bg-accent/5"
+                          : "border-line bg-card hover:border-muted"
+                      }`}
+                    >
+                      <span>
+                        <span className="block font-medium">{option.title}</span>
+                        <span className="block text-sm text-secondary">{option.detail}</span>
+                      </span>
+                      <span className="font-medium tnum">
+                        {cost === 0 ? t("cart.free") : formatPrice(cost)}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="mt-8 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => goToStep(1)}
-                  className="h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-white hover:text-primary"
-                >
+                <button type="button" onClick={() => goToStep(1)} className={backButtonClass}>
                   {t("checkout.back")}
                 </button>
                 <button type="button" onClick={() => goToStep(3)} className={continueButtonClass}>
@@ -342,108 +363,84 @@ export default function CheckoutClient() {
           ) : null}
 
           {step === 3 ? (
-            <section aria-label="Payment">
-              <h2 className="mb-6 font-display text-2xl font-semibold">{t("checkout.paymentTitle")}</h2>
-              <div className="mb-6 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={placeOrder}
-                  className="h-14 rounded-lg bg-black font-semibold text-white ring-1 ring-line transition-transform hover:scale-[1.02]"
-                >
-                   Pay
-                </button>
-                <button
-                  type="button"
-                  onClick={placeOrder}
-                  className="h-14 rounded-lg bg-cta font-semibold text-cta-text transition-transform hover:scale-[1.02]"
-                >
-                  G Pay
-                </button>
-              </div>
-              <div className="mb-6 flex items-center gap-3 text-xs text-muted">
-                <span className="h-px flex-1 bg-line" />
-                {t("checkout.orCard")}
-                <span className="h-px flex-1 bg-line" />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FloatingField
-                  label={t("checkout.cardName")}
-                  autoComplete="cc-name"
-                  value={card.name}
-                  onChange={(event) => setCard({ ...card, name: event.target.value })}
-                  error={errors.cardName}
-                  errorNonce={errorNonce}
-                  className="sm:col-span-2"
+            <section aria-label={t("checkout.paymentTitle")}>
+              <h2 className="mb-6 font-display text-2xl font-semibold">
+                {t("checkout.paymentTitle")}
+              </h2>
+              <div className="flex flex-col gap-3" role="radiogroup" aria-label={t("checkout.paymentTitle")}>
+                <PaymentOption
+                  isSelected={paymentMethod === "cod"}
+                  onSelect={() => setPaymentMethod("cod")}
+                  title={t("checkout.payCod")}
+                  detail={t("checkout.payCodDetail")}
                 />
-                <div className="relative sm:col-span-2">
+                <PaymentOption
+                  isSelected={paymentMethod === "bkash"}
+                  onSelect={() => setPaymentMethod("bkash")}
+                  title={t("checkout.payBkash")}
+                  detail={t("checkout.payManualDetail")}
+                />
+                <PaymentOption
+                  isSelected={paymentMethod === "nagad"}
+                  onSelect={() => setPaymentMethod("nagad")}
+                  title={t("checkout.payNagad")}
+                  detail={t("checkout.payManualDetail")}
+                />
+                {IS_SSLCOMMERZ_ENABLED ? (
+                  <PaymentOption
+                    isSelected={paymentMethod === "sslcommerz"}
+                    onSelect={() => setPaymentMethod("sslcommerz")}
+                    title={t("checkout.payOnline")}
+                    detail={t("checkout.payOnlineDetail")}
+                  />
+                ) : null}
+              </div>
+
+              {isManualPayment ? (
+                <div className="mt-5 rounded-xl border border-line bg-card p-5">
+                  <p className="mb-3 text-sm text-secondary">
+                    {t("checkout.sendTo")}:{" "}
+                    <strong className="text-primary tnum">
+                      {(paymentMethod === "bkash" ? BKASH_NUMBER : NAGAD_NUMBER) || "01XXX-XXXXXX"}
+                    </strong>{" "}
+                    · <span className="tnum">{formatPrice(total)}</span>
+                  </p>
                   <FloatingField
-                    label={t("checkout.cardNumber")}
-                    inputMode="numeric"
-                    autoComplete="cc-number"
-                    value={card.number}
-                    onChange={(event) =>
-                      setCard({
-                        ...card,
-                        number: event.target.value
-                          .replace(/[^\d]/g, "")
-                          .slice(0, 16)
-                          .replace(/(\d{4})(?=\d)/g, "$1 "),
-                      })
-                    }
-                    error={errors.cardNumber}
+                    label={t("checkout.trxId")}
+                    value={trxId}
+                    onChange={(event) => {
+                      setTrxId(event.target.value);
+                      if (errors.trxId) {
+                        setErrors((current) => ({ ...current, trxId: undefined }));
+                      }
+                    }}
+                    error={errors.trxId}
                     errorNonce={errorNonce}
                   />
-                  {cardType ? (
-                    <span className="absolute right-4 top-[17px] rounded border border-line bg-elevated px-2 py-1 text-[10px] font-bold text-primary">
-                      {cardType}
-                    </span>
-                  ) : null}
                 </div>
-                <FloatingField
-                  label={t("checkout.expiry")}
-                  inputMode="numeric"
-                  autoComplete="cc-exp"
-                  value={card.expiry}
-                  onChange={(event) => {
-                    const digits = event.target.value.replace(/[^\d]/g, "").slice(0, 4);
-                    const formatted =
-                      digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-                    setCard({ ...card, expiry: formatted });
-                  }}
-                  error={errors.cardExpiry}
-                  errorNonce={errorNonce}
-                />
-                <FloatingField
-                  label={t("checkout.cvc")}
-                  inputMode="numeric"
-                  autoComplete="cc-csc"
-                  value={card.cvc}
-                  onChange={(event) =>
-                    setCard({ ...card, cvc: event.target.value.replace(/[^\d]/g, "").slice(0, 4) })
-                  }
-                  error={errors.cardCvc}
-                  errorNonce={errorNonce}
-                />
-              </div>
+              ) : null}
+
+              {submitError ? (
+                <p role="alert" className="mt-4 text-sm text-accent">
+                  {submitError}
+                </p>
+              ) : null}
+
               <div className="mt-8 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => goToStep(2)}
-                  className="h-14 rounded-lg border border-line px-6 text-sm font-medium text-secondary transition-colors hover:border-white hover:text-primary"
-                >
+                <button type="button" onClick={() => goToStep(2)} className={backButtonClass}>
                   {t("checkout.back")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => validateCard() && placeOrder()}
+                  onClick={placeOrder}
+                  disabled={isSubmitting}
                   className={continueButtonClass}
                 >
-                  {t("checkout.pay")} {formatPrice(subtotal + shippingCost)}
+                  {isSubmitting
+                    ? t("checkout.placing")
+                    : `${t("checkout.placeOrder")} — ${formatPrice(total)}`}
                 </button>
               </div>
-              <p className="mt-4 text-center text-xs text-muted">
-                {t("checkout.demo")}
-              </p>
             </section>
           ) : null}
         </div>
@@ -451,5 +448,40 @@ export default function CheckoutClient() {
         <OrderSummary shippingCost={shippingCost} />
       </div>
     </div>
+  );
+}
+
+function PaymentOption({
+  isSelected,
+  onSelect,
+  title,
+  detail,
+}: {
+  isSelected: boolean;
+  onSelect: () => void;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={isSelected}
+      onClick={onSelect}
+      className={`flex items-center justify-between rounded-xl border p-5 text-left transition-colors ${
+        isSelected ? "border-accent bg-accent/5" : "border-line bg-card hover:border-muted"
+      }`}
+    >
+      <span>
+        <span className="block font-medium">{title}</span>
+        <span className="block text-sm text-secondary">{detail}</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className={`h-5 w-5 rounded-full border-2 transition-colors ${
+          isSelected ? "border-accent bg-accent" : "border-line"
+        }`}
+      />
+    </button>
   );
 }

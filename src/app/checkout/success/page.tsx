@@ -5,6 +5,7 @@ import gsap from "gsap";
 import TransitionLink from "@/components/fx/TransitionLink";
 import { formatPrice } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/locale";
+import { MESSENGER_URL, WHATSAPP_NUMBER } from "@/lib/site";
 import { prefersReducedMotion } from "@/lib/motion";
 
 const CONFETTI_COUNT = 50;
@@ -16,6 +17,7 @@ interface StoredOrder {
   email: string;
   total: number;
   itemCount: number;
+  summary?: string;
 }
 
 const EMPTY_SUBSCRIBE = () => () => {};
@@ -118,6 +120,7 @@ export default function OrderSuccessPage() {
       <p className="mt-3 text-secondary">
         {t("success.thanks")}{order?.email ? ` — ${t("success.receipt")} ${order.email}` : ""}.
       </p>
+      <p className="mt-1 text-sm text-secondary">{t("success.confirmCall")}</p>
 
       <dl className="mt-8 w-full rounded-2xl border border-line bg-card p-6 text-left text-sm">
         <div className="flex justify-between py-1.5">
@@ -138,9 +141,32 @@ export default function OrderSuccessPage() {
         </div>
       </dl>
 
+      <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row">
+        {WHATSAPP_NUMBER ? (
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${encodeURIComponent(
+              `OFFside ${order?.number ?? ""} — ${order?.summary ?? ""} — ${order ? formatPrice(order.total) : ""}`,
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-lg bg-[#25D366] font-medium text-white transition-transform hover:scale-[1.02]"
+          >
+            {t("success.whatsapp")}
+          </a>
+        ) : null}
+        <a
+          href={MESSENGER_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-lg bg-accent-alt font-medium text-white transition-transform hover:scale-[1.02]"
+        >
+          {t("success.messenger")}
+        </a>
+      </div>
+
       <TransitionLink
         href="/shop"
-        className="mt-10 rounded-lg bg-cta px-10 py-4 font-medium text-cta-text transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-white active:scale-95"
+        className="mt-4 rounded-lg border border-line px-10 py-4 font-medium text-primary transition-all duration-300 hover:-translate-y-0.5 hover:border-primary active:scale-95"
       >
         {t("success.continue")}
       </TransitionLink>
