@@ -60,7 +60,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${inter.variable} ${oswald.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject
+          body attributes before hydration and would trigger false mismatches */}
+      <body suppressHydrationWarning className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <CatalogProvider products={products} settings={settings}>
           <SmoothScroll />
