@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 import JerseyGraphic from "./JerseyGraphic";
 import { useT } from "@/lib/i18n/locale";
@@ -8,11 +9,9 @@ import type { JerseyColors, Product } from "@/lib/types";
 
 const SWIPE_THRESHOLD_PX = 50;
 
-interface GalleryView {
-  key: string;
-  view: "front" | "back";
-  colors: JerseyColors;
-}
+type GalleryView =
+  | { key: string; src: string }
+  | { key: string; view: "front" | "back"; colors: JerseyColors };
 
 interface GalleryProps {
   product: Product;
@@ -38,10 +37,15 @@ export default function Gallery({
   const lightboxRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
 
-  const views: GalleryView[] = [
-    { key: "front", view: "front", colors },
-    { key: "back", view: "back", colors },
-  ];
+  // Real photos take over unless a live customization preview is being typed
+  const hasCustomPreview = Boolean(customName || customNumber);
+  const views: GalleryView[] =
+    product.images && product.images.length > 0 && !hasCustomPreview
+      ? product.images.map((src, index) => ({ key: `photo-${index}`, src }))
+      : [
+          { key: "front", view: "front", colors },
+          { key: "back", view: "back", colors },
+        ];
   const active = views[Math.min(activeIndex, views.length - 1)];
 
   // Crossfade whenever the visible view changes
@@ -87,16 +91,27 @@ export default function Gallery({
     onIndexChange((activeIndex + direction + views.length) % views.length);
   };
 
-  const jersey = (className: string) => (
-    <JerseyGraphic
-      colors={active.colors}
-      view={active.view}
-      name={active.view === "back" ? customName : undefined}
-      number={active.view === "back" ? customNumber ?? product.number : undefined}
-      label={`${product.team} ${product.name}, ${active.view} view`}
-      className={className}
-    />
-  );
+  const jersey = (className: string) =>
+    "src" in active ? (
+      <div className={`relative ${className}`}>
+        <Image
+          src={active.src}
+          alt={`${product.team} ${product.name}`}
+          fill
+          sizes="(min-width: 1024px) 45vw, 90vw"
+          className="object-contain"
+        />
+      </div>
+    ) : (
+      <JerseyGraphic
+        colors={active.colors}
+        view={active.view}
+        name={active.view === "back" ? customName : undefined}
+        number={active.view === "back" ? customNumber ?? product.number : undefined}
+        label={`${product.team} ${product.name}, ${active.view} view`}
+        className={className}
+      />
+    );
 
   return (
     <div className="flex gap-4">
@@ -107,17 +122,21 @@ export default function Gallery({
             key={view.key}
             type="button"
             onClick={() => onIndexChange(index)}
-            aria-label={`Show ${view.view} view`}
+            aria-label={`View ${index + 1}`}
             aria-pressed={index === activeIndex}
-            className={`aspect-[3/4] rounded-lg border bg-elevated p-2 transition-colors ${
-              index === activeIndex ? "border-white" : "border-line hover:border-muted"
+            className={`relative aspect-[3/4] overflow-hidden rounded-lg border bg-elevated p-2 transition-colors ${
+              index === activeIndex ? "border-primary" : "border-line hover:border-muted"
             }`}
           >
-            <JerseyGraphic
-              colors={view.colors}
-              view={view.view}
-              number={view.view === "back" ? product.number : undefined}
-            />
+            {"src" in view ? (
+              <Image src={view.src} alt="" fill sizes="80px" className="object-cover" />
+            ) : (
+              <JerseyGraphic
+                colors={view.colors}
+                view={view.view}
+                number={view.view === "back" ? product.number : undefined}
+              />
+            )}
           </button>
         ))}
       </div>

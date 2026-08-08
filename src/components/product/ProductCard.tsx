@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import TiltCard from "@/components/fx/TiltCard";
 import TransitionLink from "@/components/fx/TransitionLink";
 import JerseyGraphic from "./JerseyGraphic";
@@ -60,13 +61,25 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             </span>
           ) : null}
 
-          <div className="flex h-full w-full items-center justify-center p-6 transition-transform duration-[600ms] ease-out group-hover:scale-[1.08]">
-            <JerseyGraphic
-              colors={product.colors}
-              label={`${product.team} ${product.name}`}
-              className="h-full w-full"
-            />
-          </div>
+          {product.images?.[0] ? (
+            <div className="relative h-full w-full transition-transform duration-[600ms] ease-out group-hover:scale-[1.08]">
+              <Image
+                src={product.images[0]}
+                alt={`${product.team} ${product.name}`}
+                fill
+                sizes="(min-width: 768px) 320px, 70vw"
+                className="object-cover"
+              />
+            </div>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-6 transition-transform duration-[600ms] ease-out group-hover:scale-[1.08]">
+              <JerseyGraphic
+                colors={product.colors}
+                label={`${product.team} ${product.name}`}
+                className="h-full w-full"
+              />
+            </div>
+          )}
 
           <span
             aria-hidden="true"

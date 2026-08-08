@@ -34,6 +34,11 @@ export interface Product {
   description: string;
   descriptionBn?: string;
   soldOutSizes: Size[];
+  /**
+   * Real product photos under public/products/ (first = front, second = back).
+   * When absent the SVG jersey renderer is used instead.
+   */
+  images?: string[];
 }
 
 export interface Review {
