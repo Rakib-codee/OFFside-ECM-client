@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -10,11 +11,15 @@ gsap.registerPlugin(ScrollTrigger);
 
 /**
  * Site-wide Lenis smooth scrolling, kept in sync with GSAP ScrollTrigger
- * by driving Lenis from the GSAP ticker.
+ * by driving Lenis from the GSAP ticker. Skipped on /admin — the dashboard
+ * is a utility page and native scrolling there must never be interfered with.
  */
 export default function SmoothScroll() {
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
+
   useEffect(() => {
-    if (prefersReducedMotion()) {
+    if (isAdmin || prefersReducedMotion()) {
       return;
     }
 
@@ -31,7 +36,7 @@ export default function SmoothScroll() {
       gsap.ticker.remove(rafCallback);
       lenis.destroy();
     };
-  }, []);
+  }, [isAdmin]);
 
   return null;
 }
