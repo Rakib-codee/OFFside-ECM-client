@@ -15,19 +15,19 @@ const SHOP_LINKS: { labelKey: MessageKey; href: string }[] = [
   { labelKey: "cat.kids", href: "/shop?cat=kids" },
 ];
 
-const SUPPORT_LINKS: MessageKey[] = [
-  "footer.sizeGuide",
-  "footer.shipping",
-  "footer.tracking",
-  "footer.faq",
-  "footer.contact",
+const SUPPORT_LINKS: { labelKey: MessageKey; href: string }[] = [
+  { labelKey: "footer.sizeGuide", href: "/size-guide" },
+  { labelKey: "footer.shipping", href: "/shipping-returns" },
+  { labelKey: "footer.tracking", href: "/track-order" },
+  { labelKey: "footer.faq", href: "/faq" },
+  { labelKey: "footer.contact", href: "/contact" },
 ];
 
-const COMPANY_LINKS: MessageKey[] = [
-  "footer.about",
-  "footer.stores",
-  "footer.careers",
-  "footer.press",
+const COMPANY_LINKS: { labelKey: MessageKey; href: string }[] = [
+  { labelKey: "footer.about", href: "/about" },
+  { labelKey: "footer.stores", href: "/about#stores" },
+  { labelKey: "footer.careers", href: "/about#careers" },
+  { labelKey: "footer.press", href: "/about#press" },
 ];
 
 export default function Footer() {
@@ -55,11 +55,11 @@ export default function Footer() {
             {t("footer.support")}
           </h3>
           <ul className="flex flex-col gap-2.5">
-            {SUPPORT_LINKS.map((labelKey) => (
-              <li key={labelKey}>
-                <a href="#" className="footer-link">
-                  {t(labelKey)}
-                </a>
+            {SUPPORT_LINKS.map((link) => (
+              <li key={link.labelKey}>
+                <TransitionLink href={link.href} className="footer-link">
+                  {t(link.labelKey)}
+                </TransitionLink>
               </li>
             ))}
           </ul>
@@ -69,11 +69,11 @@ export default function Footer() {
             {t("footer.company")}
           </h3>
           <ul className="flex flex-col gap-2.5">
-            {COMPANY_LINKS.map((labelKey) => (
-              <li key={labelKey}>
-                <a href="#" className="footer-link">
-                  {t(labelKey)}
-                </a>
+            {COMPANY_LINKS.map((link) => (
+              <li key={link.labelKey}>
+                <TransitionLink href={link.href} className="footer-link">
+                  {t(link.labelKey)}
+                </TransitionLink>
               </li>
             ))}
           </ul>
