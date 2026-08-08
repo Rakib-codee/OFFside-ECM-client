@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { formatPrice } from "@/lib/format";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
-import { PRODUCTS } from "@/lib/products";
+import { useProducts } from "@/components/CatalogProvider";
 import {
   formatOrderDate,
   STATUS_STYLES,
@@ -21,6 +21,7 @@ interface OrderCardProps {
 }
 
 export default function OrderCard({ order, isNew, onStatusChange }: OrderCardProps) {
+  const products = useProducts();
   const [hasCopied, setHasCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,7 +84,7 @@ export default function OrderCard({ order, isNew, onStatusChange }: OrderCardPro
 
       <ul className="mb-3 border-y border-line py-2">
         {order.items.map((item, index) => {
-          const product = PRODUCTS.find((entry) => entry.id === item.productId);
+          const product = products.find((entry) => entry.id === item.productId);
           const isCustomized = Boolean(item.customName || item.customNumber);
           return (
             <li key={index} className="flex items-center gap-3 py-1.5 text-sm text-secondary">

@@ -16,6 +16,7 @@ import {
   type SortOrder,
 } from "@/lib/shop-filters";
 import { useLocale, useT } from "@/lib/i18n/locale";
+import { useProducts } from "@/components/CatalogProvider";
 import type { Category } from "@/lib/types";
 
 const PAGE_SIZE = 8;
@@ -24,6 +25,7 @@ const VALID_CATEGORIES: Category[] = ["club", "national", "retro", "training", "
 export default function ShopClient() {
   const t = useT();
   const locale = useLocale();
+  const products = useProducts();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<ShopFilters>(DEFAULT_FILTERS);
   const [sortOrder, setSortOrder] = useState<SortOrder>("featured");
@@ -53,11 +55,11 @@ export default function ShopClient() {
   }, [searchParams]);
 
   const results = useMemo(
-    () => sortProducts(applyFilters(filters), sortOrder),
-    [filters, sortOrder],
+    () => sortProducts(applyFilters(products, filters), sortOrder),
+    [products, filters, sortOrder],
   );
   const visible = results.slice(0, visibleCount);
-  const chips = describeActiveFilters(filters, t, locale);
+  const chips = describeActiveFilters(filters, t, locale, products);
 
   const removeChip = (key: string) => {
     if (key === "category") {

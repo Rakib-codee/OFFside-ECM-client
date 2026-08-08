@@ -9,6 +9,8 @@ import Footer from "@/components/layout/Footer";
 import MobileMenu from "@/components/layout/MobileMenu";
 import MobileTabBar from "@/components/layout/MobileTabBar";
 import CartDrawer from "@/components/cart/CartDrawer";
+import { CatalogProvider } from "@/components/CatalogProvider";
+import { getCatalog, getSettings } from "@/lib/catalog";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -50,7 +52,8 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0a",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const [products, settings] = await Promise.all([getCatalog(), getSettings()]);
   return (
     <html
       lang="en"
@@ -59,15 +62,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <SmoothScroll />
-        <CustomCursor />
-        <ScrollProgress />
-        <Navbar />
-        {children}
-        <Footer />
-        <CartDrawer />
-        <MobileMenu />
-        <MobileTabBar />
+        <CatalogProvider products={products} settings={settings}>
+          <SmoothScroll />
+          <CustomCursor />
+          <ScrollProgress />
+          <Navbar />
+          {children}
+          <Footer />
+          <CartDrawer />
+          <MobileMenu />
+          <MobileTabBar />
+        </CatalogProvider>
       </body>
     </html>
   );

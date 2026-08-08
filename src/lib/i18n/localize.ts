@@ -1,4 +1,3 @@
-import { PRODUCTS } from "../products";
 import type { Product, Review } from "../types";
 import type { Locale } from "./locale";
 
@@ -20,21 +19,31 @@ export function localizedQuote(review: Review, locale: Locale): string {
   return locale === "bn" && review.quoteBn ? review.quoteBn : review.quote;
 }
 
-export function localizedTeamById(productId: string, fallback: string, locale: Locale): string {
-  const product = PRODUCTS.find((entry) => entry.id === productId);
+export function localizedTeamById(
+  products: Product[],
+  productId: string,
+  fallback: string,
+  locale: Locale,
+): string {
+  const product = products.find((entry) => entry.id === productId);
   return product ? localizedTeam(product, locale) : fallback;
 }
 
-export function localizedNameById(productId: string, fallback: string, locale: Locale): string {
-  const product = PRODUCTS.find((entry) => entry.id === productId);
+export function localizedNameById(
+  products: Product[],
+  productId: string,
+  fallback: string,
+  locale: Locale,
+): string {
+  const product = products.find((entry) => entry.id === productId);
   return product ? localizedName(product, locale) : fallback;
 }
 
 /** Bangla label for a team name string (used by shop filters). */
-export function localizedTeamLabel(team: string, locale: Locale): string {
+export function localizedTeamLabel(products: Product[], team: string, locale: Locale): string {
   if (locale !== "bn") {
     return team;
   }
-  const product = PRODUCTS.find((entry) => entry.team === team);
+  const product = products.find((entry) => entry.team === team);
   return product?.teamBn ?? team;
 }

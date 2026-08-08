@@ -4,14 +4,15 @@ import Reveal from "@/components/fx/Reveal";
 import { useT } from "@/lib/i18n/locale";
 import TransitionLink from "@/components/fx/TransitionLink";
 import ProductCard from "@/components/product/ProductCard";
-import { PRODUCTS } from "@/lib/products";
+import { useProducts } from "@/components/CatalogProvider";
 
 const FEATURED_COUNT = 8;
 
 /** "The Starting XI" — featured grid, swipeable carousel on mobile. */
 export default function FeaturedProducts() {
   const t = useT();
-  const featured = [...PRODUCTS]
+  const products = useProducts();
+  const featured = [...products]
     .sort((a, b) => Number(Boolean(b.badge)) - Number(Boolean(a.badge)))
     .slice(0, FEATURED_COUNT);
 

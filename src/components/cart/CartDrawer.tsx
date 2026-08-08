@@ -8,12 +8,10 @@ import QtyStepper from "./QtyStepper";
 import { formatPrice } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/locale";
 import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
+import { useProducts, useSettings } from "@/components/CatalogProvider";
+import { shippingFor } from "@/lib/shipping";
 import { EASE_OUT, prefersReducedMotion } from "@/lib/motion";
-import {
-  selectShipping,
-  selectSubtotal,
-  useCartStore,
-} from "@/lib/store/cart";
+import { selectSubtotal, useCartStore } from "@/lib/store/cart";
 import { useUiStore } from "@/lib/store/ui";
 
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -21,13 +19,15 @@ const MOBILE_QUERY = "(max-width: 767px)";
 export default function CartDrawer() {
   const t = useT();
   const locale = useLocale();
+  const products = useProducts();
+  const settings = useSettings();
   const isCartOpen = useUiStore((state) => state.isCartOpen);
   const closeCart = useUiStore((state) => state.closeCart);
   const items = useCartStore((state) => state.items);
   const setQuantity = useCartStore((state) => state.setQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
   const subtotal = useCartStore(selectSubtotal);
-  const shipping = useCartStore(selectShipping);
+  const shipping = shippingFor("dhaka", subtotal, settings);
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -162,8 +162,8 @@ export default function CartDrawer() {
                     />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="truncate text-xs uppercase tracking-wider text-secondary">{localizedTeamById(item.productId, item.team, locale)}</p>
-                    <p className="truncate text-sm font-medium">{localizedNameById(item.productId, item.name, locale)}</p>
+                    <p className="truncate text-xs uppercase tracking-wider text-secondary">{localizedTeamById(products, item.productId, item.team, locale)}</p>
+                    <p className="truncate text-sm font-medium">{localizedNameById(products, item.productId, item.name, locale)}</p>
                     <p className="text-xs text-muted">
                       {t("cart.size")} {item.size}
                       {item.customName ? ` · ${item.customName}` : ""}

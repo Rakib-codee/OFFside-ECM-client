@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const result = validateAndPriceOrder(body);
+  const result = await validateAndPriceOrder(body);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }

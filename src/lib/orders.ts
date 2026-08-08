@@ -1,6 +1,10 @@
-import { ALL_SIZES, CUSTOMIZATION_PRICE, getEffectivePrice, PRODUCTS } from "./products";
+import { getCatalog, getSettings } from "./catalog";
+import { ALL_SIZES, CUSTOMIZATION_PRICE, getEffectivePrice } from "./products";
 import { shippingFor, type DeliveryZone } from "./shipping";
+import { isDbConfigured, supabaseRest } from "./supabase";
 import type { Size } from "./types";
+
+export { isDbConfigured };
 
 /**
  * Server-side order handling: validation with server-recomputed prices,
@@ -64,8 +68,9 @@ type ValidationResult =
   | { ok: true; record: Omit<OrderRecord, "order_no"> }
   | { ok: false; error: string };
 
-/** Validates an incoming order and reprices it from the catalog — client prices are never trusted. */
-export function validateAndPriceOrder(input: unknown): ValidationResult {
+/** Validates an incoming order and reprices it from the live catalog — client prices are never trusted. */
+export async function validateAndPriceOrder(input: unknown): Promise<ValidationResult> {
+  const [catalog, settings] = await Promise.all([getCatalog(), getSettings()]);
   if (typeof input !== "object" || input === null) {
     return { ok: false, error: "Invalid payload" };
   }
@@ -113,7 +118,7 @@ export function validateAndPriceOrder(input: unknown): ValidationResult {
 
   const items: PricedOrderItem[] = [];
   for (const raw of order.items) {
-    const product = PRODUCTS.find((entry) => entry.id === raw?.productId);
+    const product = catalog.find((entry) => entry.id === raw?.productId);
     if (!product) {
       return { ok: false, error: "Unknown product" };
     }
@@ -141,7 +146,7 @@ export function validateAndPriceOrder(input: unknown): ValidationResult {
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const shipping = shippingFor(order.zone, subtotal);
+  const shipping = shippingFor(order.zone, subtotal, settings);
 
   return {
     ok: true,
@@ -163,33 +168,7 @@ export function generateOrderNo(): string {
   return `OFF-${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
-/* ---------- Supabase REST persistence (no SDK dependency) ---------- */
-
-function supabaseConfig(): { url: string; key: string } | null {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return url && key ? { url: url.replace(/\/$/, ""), key } : null;
-}
-
-export function isDbConfigured(): boolean {
-  return supabaseConfig() !== null;
-}
-
-async function supabaseRest(path: string, init: RequestInit): Promise<Response> {
-  const config = supabaseConfig();
-  if (!config) {
-    throw new Error("Supabase is not configured");
-  }
-  return fetch(`${config.url}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
-      "Content-Type": "application/json",
-      ...init.headers,
-    },
-  });
-}
+/* ---------- Supabase REST persistence (shared helper in supabase.ts) ---------- */
 
 export async function insertOrder(record: OrderRecord): Promise<boolean> {
   try {

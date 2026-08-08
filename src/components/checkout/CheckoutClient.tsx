@@ -11,6 +11,7 @@ import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { formatPrice } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n/locale";
 import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
+import { useProducts, useSettings } from "@/components/CatalogProvider";
 import { shippingFor, type DeliveryZone } from "@/lib/shipping";
 import { BKASH_NUMBER, IS_SSLCOMMERZ_ENABLED, NAGAD_NUMBER } from "@/lib/site";
 import { useCartStore } from "@/lib/store/cart";
@@ -34,6 +35,8 @@ const EMPTY_INFO: InfoForm = { name: "", phone: "", email: "", address: "", dist
 export default function CheckoutClient() {
   const t = useT();
   const locale = useLocale();
+  const products = useProducts();
+  const settings = useSettings();
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const setQuantity = useCartStore((state) => state.setQuantity);
@@ -50,7 +53,7 @@ export default function CheckoutClient() {
   const [submitError, setSubmitError] = useState("");
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const shippingCost = shippingFor(zone, subtotal);
+  const shippingCost = shippingFor(zone, subtotal, settings);
   const total = subtotal + shippingCost;
   const isManualPayment = paymentMethod === "bkash" || paymentMethod === "nagad";
 
@@ -221,10 +224,10 @@ export default function CheckoutClient() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs uppercase tracking-wider text-secondary">
-                        {localizedTeamById(item.productId, item.team, locale)}
+                        {localizedTeamById(products, item.productId, item.team, locale)}
                       </p>
                       <p className="truncate font-medium">
-                        {localizedNameById(item.productId, item.name, locale)}
+                        {localizedNameById(products, item.productId, item.name, locale)}
                       </p>
                       <p className="text-xs text-muted">
                         {t("cart.size")} {item.size}
@@ -326,7 +329,7 @@ export default function CheckoutClient() {
                     { key: "outside" as const, title: t("checkout.outsideDhaka"), detail: t("checkout.etaOutside") },
                   ]
                 ).map((option) => {
-                  const cost = shippingFor(option.key, subtotal);
+                  const cost = shippingFor(option.key, subtotal, settings);
                   return (
                     <button
                       key={option.key}

@@ -8,6 +8,7 @@ import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/store/cart";
 import { useLocale, useT } from "@/lib/i18n/locale";
 import { localizedNameById, localizedTeamById } from "@/lib/i18n/localize";
+import { useProducts } from "@/components/CatalogProvider";
 
 interface OrderSummaryProps {
   shippingCost: number;
@@ -17,6 +18,7 @@ interface OrderSummaryProps {
 export default function OrderSummary({ shippingCost }: OrderSummaryProps) {
   const t = useT();
   const locale = useLocale();
+  const products = useProducts();
   const items = useCartStore((state) => state.items);
   const [isExpanded, setIsExpanded] = useState(true);
   const listRef = useRef<HTMLUListElement>(null);
@@ -72,7 +74,7 @@ export default function OrderSummary({ shippingCost }: OrderSummaryProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
-                {localizedTeamById(item.productId, item.team, locale)} · {localizedNameById(item.productId, item.name, locale)}
+                {localizedTeamById(products, item.productId, item.team, locale)} · {localizedNameById(products, item.productId, item.name, locale)}
               </p>
               <p className="text-xs text-muted">
                 {t("cart.size")} {item.size} × {item.quantity}

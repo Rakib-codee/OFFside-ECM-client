@@ -3,9 +3,10 @@
 import { ALL_SIZES } from "@/lib/products";
 import { useLocale, useT } from "@/lib/i18n/locale";
 import { localizedTeamLabel } from "@/lib/i18n/localize";
+import { useProducts } from "@/components/CatalogProvider";
 import {
-  ALL_TEAMS,
   CATEGORY_LABEL_KEYS,
+  deriveTeams,
   PRICE_CEILING,
   type ShopFilters,
 } from "@/lib/shop-filters";
@@ -20,6 +21,8 @@ interface FilterControlsProps {
 export default function FilterControls({ filters, onChange }: FilterControlsProps) {
   const t = useT();
   const locale = useLocale();
+  const products = useProducts();
+  const teams = deriveTeams(products);
   const toggleTeam = (team: string) => {
     const teams = filters.teams.includes(team)
       ? filters.teams.filter((entry) => entry !== team)
@@ -62,7 +65,7 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
       <fieldset>
         <legend className="mb-3 text-sm font-semibold uppercase tracking-wider">{t("shop.team")}</legend>
         <div className="flex flex-col gap-1.5">
-          {ALL_TEAMS.map((team) => (
+          {teams.map((team) => (
             <label key={team} className="flex cursor-pointer items-center gap-2 text-sm text-secondary hover:text-primary">
               <input
                 type="checkbox"
@@ -70,7 +73,7 @@ export default function FilterControls({ filters, onChange }: FilterControlsProp
                 onChange={() => toggleTeam(team)}
                 className="h-4 w-4 accent-[#ff3b30]"
               />
-              {localizedTeamLabel(team, locale)}
+              {localizedTeamLabel(products, team, locale)}
             </label>
           ))}
         </div>

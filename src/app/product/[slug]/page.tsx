@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetail from "@/components/product/ProductDetail";
 import RelatedProducts from "@/components/product/RelatedProducts";
-import { getProductBySlug, PRODUCTS } from "@/lib/products";
+import { getCatalog } from "@/lib/catalog";
+import { PRODUCTS } from "@/lib/products";
 
+/** Static params come from the built-in catalog; admin-added products render on demand. */
 export function generateStaticParams() {
   return PRODUCTS.map((product) => ({ slug: product.slug }));
 }
@@ -12,7 +14,8 @@ export async function generateMetadata({
   params,
 }: PageProps<"/product/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const catalog = await getCatalog();
+  const product = catalog.find((entry) => entry.slug === slug);
   if (!product) {
     return { title: "Product not found" };
   }
@@ -24,7 +27,8 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: PageProps<"/product/[slug]">) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const catalog = await getCatalog();
+  const product = catalog.find((entry) => entry.slug === slug);
   if (!product) {
     notFound();
   }

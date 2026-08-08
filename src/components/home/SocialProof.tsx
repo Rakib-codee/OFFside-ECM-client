@@ -4,7 +4,8 @@ import Reveal from "@/components/fx/Reveal";
 import { useLocale, useT } from "@/lib/i18n/locale";
 import { localizedQuote } from "@/lib/i18n/localize";
 import JerseyGraphic from "@/components/product/JerseyGraphic";
-import { PRODUCTS, REVIEWS } from "@/lib/products";
+import { useProducts } from "@/components/CatalogProvider";
+import { REVIEWS } from "@/lib/products";
 import type { Review } from "@/lib/types";
 
 /** "The 12th Man" — infinite marquee of fan reviews and kit tiles. */
@@ -41,7 +42,7 @@ function MarqueeRow({ reviews, productOffset }: { reviews: Review[]; productOffs
             <ReviewAndTile
               key={`${review.name}-${copy}`}
               review={review}
-              productIndex={(productOffset + index) % PRODUCTS.length}
+              productIndex={productOffset + index}
             />
           ))}
         </div>
@@ -52,7 +53,8 @@ function MarqueeRow({ reviews, productOffset }: { reviews: Review[]; productOffs
 
 function ReviewAndTile({ review, productIndex }: { review: Review; productIndex: number }) {
   const locale = useLocale();
-  const product = PRODUCTS[productIndex];
+  const products = useProducts();
+  const product = products[productIndex % products.length];
   return (
     <>
       <figure className="flex h-[200px] w-[260px] shrink-0 flex-col justify-between rounded-xl border border-line bg-card p-5 transition-transform duration-300 hover:scale-105">

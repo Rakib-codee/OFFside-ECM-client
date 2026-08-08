@@ -260,11 +260,15 @@ export function getProductBySlug(slug: string): Product | undefined {
   return PRODUCTS.find((product) => product.slug === slug);
 }
 
-export function getRelatedProducts(product: Product, count = 4): Product[] {
-  const sameCategory = PRODUCTS.filter(
+export function getRelatedProducts(
+  products: Product[],
+  product: Product,
+  count = 4,
+): Product[] {
+  const sameCategory = products.filter(
     (candidate) => candidate.id !== product.id && candidate.category === product.category,
   );
-  const others = PRODUCTS.filter(
+  const others = products.filter(
     (candidate) => candidate.id !== product.id && candidate.category !== product.category,
   );
   return [...sameCategory, ...others].slice(0, count);

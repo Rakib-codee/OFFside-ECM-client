@@ -1,4 +1,4 @@
-import { getEffectivePrice, PRODUCTS } from "./products";
+import { getEffectivePrice } from "./products";
 import { localizedTeamLabel } from "./i18n/localize";
 import type { MessageKey } from "./i18n/dictionary";
 import type { Locale } from "./i18n/locale";
@@ -26,7 +26,9 @@ export const DEFAULT_FILTERS: ShopFilters = {
   tag: null,
 };
 
-export const ALL_TEAMS = [...new Set(PRODUCTS.map((product) => product.team))].sort();
+export function deriveTeams(products: Product[]): string[] {
+  return [...new Set(products.map((product) => product.team))].sort();
+}
 
 export const CATEGORY_LABEL_KEYS: Record<Category, MessageKey> = {
   club: "cat.club",
@@ -36,9 +38,9 @@ export const CATEGORY_LABEL_KEYS: Record<Category, MessageKey> = {
   kids: "cat.kids",
 };
 
-export function applyFilters(filters: ShopFilters): Product[] {
+export function applyFilters(products: Product[], filters: ShopFilters): Product[] {
   const query = filters.query.trim().toLowerCase();
-  return PRODUCTS.filter((product) => {
+  return products.filter((product) => {
     if (filters.category && product.category !== filters.category) {
       return false;
     }
@@ -86,6 +88,7 @@ export function describeActiveFilters(
   filters: ShopFilters,
   t: (key: MessageKey) => string,
   locale: Locale,
+  products: Product[],
 ): { key: string; label: string }[] {
   const chips: { key: string; label: string }[] = [];
   if (filters.category) {
@@ -95,7 +98,7 @@ export function describeActiveFilters(
     chips.push({ key: "tag", label: filters.tag === "new" ? t("shop.chipNew") : t("shop.chipSale") });
   }
   filters.teams.forEach((team) =>
-    chips.push({ key: `team:${team}`, label: localizedTeamLabel(team, locale) }),
+    chips.push({ key: `team:${team}`, label: localizedTeamLabel(products, team, locale) }),
   );
   filters.sizes.forEach((size) =>
     chips.push({ key: `size:${size}`, label: `${t("cart.size")} ${size}` }),

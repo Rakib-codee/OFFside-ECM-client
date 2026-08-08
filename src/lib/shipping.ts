@@ -6,9 +6,25 @@ export const OUTSIDE_DHAKA_SHIPPING_RATE = 130;
 
 export type DeliveryZone = "dhaka" | "outside";
 
-export function shippingFor(zone: DeliveryZone, subtotal: number): number {
-  if (subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD) {
+interface ShippingRates {
+  dhakaRate: number;
+  outsideRate: number;
+  freeShippingThreshold: number;
+}
+
+const DEFAULT_RATES: ShippingRates = {
+  dhakaRate: DHAKA_SHIPPING_RATE,
+  outsideRate: OUTSIDE_DHAKA_SHIPPING_RATE,
+  freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+};
+
+export function shippingFor(
+  zone: DeliveryZone,
+  subtotal: number,
+  rates: ShippingRates = DEFAULT_RATES,
+): number {
+  if (subtotal === 0 || subtotal >= rates.freeShippingThreshold) {
     return 0;
   }
-  return zone === "dhaka" ? DHAKA_SHIPPING_RATE : OUTSIDE_DHAKA_SHIPPING_RATE;
+  return zone === "dhaka" ? rates.dhakaRate : rates.outsideRate;
 }

@@ -3,13 +3,15 @@
 import Reveal from "@/components/fx/Reveal";
 import { useT } from "@/lib/i18n/locale";
 import ProductCard from "./ProductCard";
+import { useProducts } from "@/components/CatalogProvider";
 import { getRelatedProducts } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 /** "Complete the look" — horizontally scrollable related kits. */
 export default function RelatedProducts({ product }: { product: Product }) {
   const t = useT();
-  const related = getRelatedProducts(product);
+  const products = useProducts();
+  const related = getRelatedProducts(products, product);
   if (related.length === 0) {
     return null;
   }
