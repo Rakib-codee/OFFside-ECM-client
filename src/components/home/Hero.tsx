@@ -85,10 +85,13 @@ export default function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-8">
         <h1 className="font-display font-bold leading-[1.02] text-primary" style={{ fontSize: "clamp(48px, 8vw, 96px)" }}>
           {t("hero.headline").split(" ").map((word) => (
-            <span key={word} className="inline-block overflow-hidden pb-1 align-bottom">
+            <span
+              key={word}
+              className="mr-[0.28em] inline-block overflow-hidden pb-1 align-bottom last:mr-0"
+            >
               <span data-hero-word className="inline-block will-change-transform">
                 {word}
-              </span>{" "}
+              </span>
             </span>
           ))}
         </h1>
