@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import AdminClient, { type AdminOrder } from "./AdminClient";
+import AdminClient from "./AdminClient";
+import type { AdminOrder } from "./admin-utils";
 import { ADMIN_COOKIE, isValidAdminToken } from "@/lib/admin-auth";
 import { isDbConfigured, listOrders } from "@/lib/orders";
 
