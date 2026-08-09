@@ -241,7 +241,8 @@ interface EmailSender {
 }
 
 /** Parses ORDER_EMAIL_FROM ("Name <email>" or a bare address). */
-function parseSender(raw: string): EmailSender | null {
+function parseSender(rawInput: string): EmailSender | null {
+  const raw = rawInput.trim().replace(/^"|"$/g, "");
   const withName = raw.match(/^\s*"?([^"<]*?)"?\s*<([^>]+@[^>]+)>\s*$/);
   if (withName) {
     return { name: withName[1].trim() || undefined, email: withName[2].trim() };
