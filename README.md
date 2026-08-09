@@ -115,7 +115,7 @@ features unlock as you add them:
 |---|---|
 | `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | Orders saved to the database |
 | `ADMIN_PASSWORD` | The `/admin` order dashboard |
-| `RESEND_API_KEY` + `ORDER_NOTIFY_EMAIL` | Email for every new order |
+| `RESEND_API_KEY` | Emails: a branded confirmation to the customer + `ORDER_NOTIFY_EMAIL` notification to the shop. Verify a domain in Resend and set `ORDER_EMAIL_FROM` to deliver to real customers |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | "Send order on WhatsApp" button (e.g. `8801XXXXXXXXX`) |
 | `NEXT_PUBLIC_BKASH_NUMBER` / `NEXT_PUBLIC_NAGAD_NUMBER` | Send Money numbers at checkout |
 | `NEXT_PUBLIC_SSLCOMMERZ_ENABLED` + `SSLCOMMERZ_STORE_ID`/`SSLCOMMERZ_STORE_PASSWORD` | Online payment option |

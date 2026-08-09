@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { sendCustomerOrderEmail, sendShopOrderEmail } from "@/lib/email";
 import {
   generateOrderNo,
   insertOrder,
   isDbConfigured,
   listOrders,
   ORDER_STATUSES,
-  sendOrderEmail,
   updateOrderStatus,
   validateAndPriceOrder,
   type OrderStatus,
@@ -32,8 +32,9 @@ export async function POST(request: Request) {
   if (isDbConfigured()) {
     saved = await insertOrder(record);
   }
-  // Notification is best-effort — never blocks the customer
-  await sendOrderEmail(record);
+  // Notifications are best-effort — never block the customer
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  await Promise.all([sendShopOrderEmail(record), sendCustomerOrderEmail(record, origin)]);
 
   return NextResponse.json({
     orderNo: record.order_no,

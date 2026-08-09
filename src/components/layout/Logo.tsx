@@ -21,7 +21,7 @@ export default function Logo({ className, size = "md" }: LogoProps) {
         className={`rounded-full ${isSmall ? "h-6 w-6" : "h-8 w-8"}`}
       />
       <span
-        className={`font-display font-bold uppercase tracking-tight ${
+        className={`font-display font-bold uppercase tracking-tight text-primary ${
           isSmall ? "text-base" : "text-xl"
         }`}
       >
