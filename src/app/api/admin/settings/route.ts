@@ -11,7 +11,11 @@ export async function GET(request: Request) {
   return NextResponse.json({
     settings: await getSettings(),
     dbReady: isDbConfigured(),
-    emailConfigured: Boolean(process.env.RESEND_API_KEY),
+    emailConfigured: Boolean(
+      process.env.AWS_SES_ACCESS_KEY_ID &&
+        process.env.AWS_SES_SECRET_ACCESS_KEY &&
+        process.env.AWS_SES_REGION,
+    ),
     shopEmailSet: Boolean(process.env.ORDER_NOTIFY_EMAIL),
   });
 }

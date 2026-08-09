@@ -93,13 +93,14 @@ export default function SettingsPanel() {
             <div className="text-sm leading-relaxed text-secondary">
               <p className="mb-2 font-medium text-accent">✗ Not connected — no emails are being sent.</p>
               <ol className="list-inside list-decimal space-y-1">
-                <li>Create a free account at resend.com and copy an API key</li>
-                <li>Put it in <code className="text-primary">RESEND_API_KEY</code> in <code>.env.local</code> (or Vercel env)</li>
+                <li>In AWS SES, verify a sender identity and create SMTP credentials</li>
+                <li>Put them in <code className="text-primary">AWS_SES_ACCESS_KEY_ID</code>, <code className="text-primary">AWS_SES_SECRET_ACCESS_KEY</code> and <code className="text-primary">AWS_SES_REGION</code> in <code>.env.local</code> (or Vercel env)</li>
                 <li>Restart the server</li>
               </ol>
               <p className="mt-2 text-muted">
-                Note: the default sender only delivers to your own Resend account email.
-                Verify your domain in Resend and set <code>ORDER_EMAIL_FROM</code> to reach real customers.
+                Note: SES only sends from verified identities, and a sandbox account only delivers
+                to verified addresses — request production access in SES to email real customers.
+                Set <code>ORDER_EMAIL_FROM</code> to choose the sender address.
               </p>
             </div>
           )}

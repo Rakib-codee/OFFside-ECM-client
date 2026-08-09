@@ -1,16 +1,16 @@
+import nodemailer, { type Transporter } from "nodemailer";
 import type { OrderRecord } from "./orders";
 
 /**
  * Transactional email: a branded, bilingual order-confirmation for the
- * customer plus a plain-text notification for the shop. Uses the Resend
- * HTTP API directly (no SDK). Both are best-effort — never block an order.
+ * customer plus a plain-text notification for the shop. Sends through
+ * AWS SES via SMTP (nodemailer). Both are best-effort — never block an order.
  *
- * Note: Resend's default sender (onboarding@resend.dev) only delivers to the
- * account owner's address. Verify a domain and set ORDER_EMAIL_FROM to send
- * to real customers.
+ * Note: SES only sends from verified identities (SES → Identities), and a
+ * sandbox account can only deliver TO verified addresses until production
+ * access is granted. Set ORDER_EMAIL_FROM ("Name <email>") to choose the
+ * sender; it falls back to ORDER_NOTIFY_EMAIL.
  */
-
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 const COPY = {
   en: {
@@ -235,23 +235,81 @@ export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
   return { subject: L.subject(record.order_no), html };
 }
 
-async function sendViaResend(payload: Record<string, unknown>): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
+interface EmailSender {
+  name?: string;
+  email: string;
+}
+
+/** Parses ORDER_EMAIL_FROM ("Name <email>" or a bare address). */
+function parseSender(raw: string): EmailSender | null {
+  const withName = raw.match(/^\s*"?([^"<]*?)"?\s*<([^>]+@[^>]+)>\s*$/);
+  if (withName) {
+    return { name: withName[1].trim() || undefined, email: withName[2].trim() };
+  }
+  const bare = raw.trim();
+  return bare.includes("@") ? { email: bare } : null;
+}
+
+/** ORDER_EMAIL_FROM wins; otherwise fall back to the shop's own notify address. */
+function resolveSender(fallbackName: string): EmailSender | null {
+  const configured = process.env.ORDER_EMAIL_FROM;
+  if (configured) {
+    return parseSender(configured);
+  }
+  const notifyEmail = process.env.ORDER_NOTIFY_EMAIL;
+  return notifyEmail ? { name: fallbackName, email: notifyEmail } : null;
+}
+
+interface EmailMessage {
+  fromName: string;
+  to: string;
+  subject: string;
+  html?: string;
+  text?: string;
+}
+
+/** Reused across warm serverless invocations to skip repeat SMTP handshakes. */
+let cachedTransport: Transporter | null = null;
+
+function sesTransport(): Transporter | null {
+  const user = process.env.AWS_SES_ACCESS_KEY_ID;
+  const pass = process.env.AWS_SES_SECRET_ACCESS_KEY;
+  const region = process.env.AWS_SES_REGION;
+  if (!user || !pass || !region) {
+    return null;
+  }
+  if (!cachedTransport) {
+    cachedTransport = nodemailer.createTransport({
+      host: `email-smtp.${region}.amazonaws.com`,
+      port: 587,
+      secure: false,
+      auth: { user, pass },
+    });
+  }
+  return cachedTransport;
+}
+
+async function sendViaSes(message: EmailMessage): Promise<void> {
+  const transport = sesTransport();
+  if (!transport) {
     console.warn(
-      "[email] RESEND_API_KEY is not set — email skipped. Add it to .env.local and restart the server.",
+      "[email] AWS SES is not configured (AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_REGION) — email skipped.",
     );
     return;
   }
+  const sender = resolveSender(message.fromName);
+  if (!sender) {
+    console.warn("[email] No sender address — set ORDER_EMAIL_FROM or ORDER_NOTIFY_EMAIL.");
+    return;
+  }
   try {
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    await transport.sendMail({
+      from: { name: sender.name ?? message.fromName, address: sender.email },
+      to: message.to,
+      subject: message.subject,
+      ...(message.html ? { html: message.html } : {}),
+      ...(message.text ? { text: message.text } : {}),
     });
-    if (!response.ok) {
-      console.error("Email send failed:", response.status, await response.text());
-    }
   } catch (error) {
     console.error("Email send error:", error);
   }
@@ -263,12 +321,7 @@ export async function sendCustomerOrderEmail(record: OrderRecord, origin: string
     return;
   }
   const { subject, html } = renderCustomerOrderEmail(record, origin);
-  await sendViaResend({
-    from: process.env.ORDER_EMAIL_FROM ?? "OFFside <onboarding@resend.dev>",
-    to: [record.customer.email],
-    subject,
-    html,
-  });
+  await sendViaSes({ fromName: "OFFside", to: record.customer.email, subject, html });
 }
 
 /** Plain-text heads-up to the shop owner. */
@@ -298,9 +351,9 @@ export async function sendShopOrderEmail(record: OrderRecord): Promise<void> {
     `Payment: ${record.payment_method}${record.payment_ref ? ` (${record.payment_ref})` : ""}`,
   ].join("\n");
 
-  await sendViaResend({
-    from: process.env.ORDER_EMAIL_FROM ?? "OFFside Orders <onboarding@resend.dev>",
-    to: [to],
+  await sendViaSes({
+    fromName: "OFFside Orders",
+    to,
     subject: `New order ${record.order_no} — ৳${record.total}`,
     text,
   });
