@@ -37,16 +37,20 @@ export default function Gallery({
   const lightboxRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
 
-  // Real photos take over unless a live customization preview is being typed
+  // Real photos always win; the customization preview draws ON the back photo
   const hasCustomPreview = Boolean(customName || customNumber);
-  const views: GalleryView[] =
-    product.images && product.images.length > 0 && !hasCustomPreview
-      ? product.images.map((src, index) => ({ key: `photo-${index}`, src }))
-      : [
-          { key: "front", view: "front", colors },
-          { key: "back", view: "back", colors },
-        ];
-  const active = views[Math.min(activeIndex, views.length - 1)];
+  const hasPhotos = Boolean(product.images && product.images.length > 0);
+  const views: GalleryView[] = hasPhotos
+    ? product.images!.map((src, index) => ({ key: `photo-${index}`, src }))
+    : [
+        { key: "front", view: "front", colors },
+        { key: "back", view: "back", colors },
+      ];
+  const clampedIndex = Math.min(activeIndex, views.length - 1);
+  const active = views[clampedIndex];
+  // Print preview shows on the back photo (second by convention) — or the only photo
+  const showPhotoOverlay =
+    "src" in active && hasCustomPreview && (views.length === 1 || clampedIndex > 0);
 
   // Crossfade whenever the visible view changes
   useEffect(() => {
@@ -102,6 +106,48 @@ export default function Gallery({
           sizes="(min-width: 1024px) 45vw, 90vw"
           className="object-contain"
         />
+        {showPhotoOverlay ? (
+          // SVG overlay scales with the photo; stroke keeps it readable on any fabric
+          <svg
+            viewBox="0 0 300 400"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full"
+          >
+            {customName ? (
+              <text
+                x="150"
+                y="118"
+                textAnchor="middle"
+                fontSize="23"
+                fontWeight="600"
+                letterSpacing="5"
+                fill={colors.text}
+                stroke="rgba(0,0,0,0.45)"
+                strokeWidth="0.8"
+                paintOrder="stroke"
+                fontFamily="var(--font-oswald), sans-serif"
+              >
+                {customName.toUpperCase().slice(0, 12)}
+              </text>
+            ) : null}
+            {customNumber ? (
+              <text
+                x="150"
+                y="248"
+                textAnchor="middle"
+                fontSize="112"
+                fontWeight="600"
+                fill={colors.text}
+                stroke="rgba(0,0,0,0.45)"
+                strokeWidth="2.5"
+                paintOrder="stroke"
+                fontFamily="var(--font-oswald), sans-serif"
+              >
+                {String(customNumber).slice(0, 2)}
+              </text>
+            ) : null}
+          </svg>
+        ) : null}
       </div>
     ) : (
       <JerseyGraphic
