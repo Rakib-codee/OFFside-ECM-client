@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { isAdminRequest } from "@/lib/admin-auth";
 import { CATALOG_TAG, getSettings, type ShopSettings } from "@/lib/catalog";
+import { emailProvider } from "@/lib/email";
 import { isDbConfigured, supabaseRest } from "@/lib/supabase";
 
 export async function GET(request: Request) {
@@ -11,11 +12,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     settings: await getSettings(),
     dbReady: isDbConfigured(),
-    emailConfigured: Boolean(
-      process.env.AWS_SES_ACCESS_KEY_ID &&
-        process.env.AWS_SES_SECRET_ACCESS_KEY &&
-        process.env.AWS_SES_REGION,
-    ),
+    emailConfigured: emailProvider() !== null,
+    emailProvider: emailProvider(),
     shopEmailSet: Boolean(process.env.ORDER_NOTIFY_EMAIL),
   });
 }

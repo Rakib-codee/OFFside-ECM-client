@@ -271,6 +271,38 @@ interface EmailMessage {
 
 /** Reused across warm serverless invocations to skip repeat SMTP handshakes. */
 let cachedTransport: Transporter | null = null;
+let cachedGmailTransport: Transporter | null = null;
+
+/** Gmail SMTP — Google's own servers, so mail lands in the inbox without a
+ *  custom domain. Preferred whenever GMAIL_USER + GMAIL_APP_PASSWORD are set. */
+function gmailTransport(): Transporter | null {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) {
+    return null;
+  }
+  if (!cachedGmailTransport) {
+    cachedGmailTransport = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user, pass },
+    });
+  }
+  return cachedGmailTransport;
+}
+
+export function emailProvider(): "gmail" | "ses" | null {
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    return "gmail";
+  }
+  if (
+    process.env.AWS_SES_ACCESS_KEY_ID &&
+    process.env.AWS_SES_SECRET_ACCESS_KEY &&
+    process.env.AWS_SES_REGION
+  ) {
+    return "ses";
+  }
+  return null;
+}
 
 function sesTransport(): Transporter | null {
   const user = process.env.AWS_SES_ACCESS_KEY_ID;
@@ -290,11 +322,30 @@ function sesTransport(): Transporter | null {
   return cachedTransport;
 }
 
+async function sendEmail(message: EmailMessage): Promise<void> {
+  const gmail = gmailTransport();
+  if (gmail) {
+    try {
+      await gmail.sendMail({
+        from: { name: message.fromName, address: process.env.GMAIL_USER! },
+        to: message.to,
+        subject: message.subject,
+        ...(message.html ? { html: message.html } : {}),
+        ...(message.text ? { text: message.text } : {}),
+      });
+    } catch (error) {
+      console.error("Gmail send error:", error);
+    }
+    return;
+  }
+  await sendViaSes(message);
+}
+
 async function sendViaSes(message: EmailMessage): Promise<void> {
   const transport = sesTransport();
   if (!transport) {
     console.warn(
-      "[email] AWS SES is not configured (AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_REGION) — email skipped.",
+      "[email] No email provider configured — set GMAIL_USER + GMAIL_APP_PASSWORD (easiest) or the AWS SES vars, then restart.",
     );
     return;
   }
@@ -322,7 +373,7 @@ export async function sendCustomerOrderEmail(record: OrderRecord, origin: string
     return;
   }
   const { subject, html } = renderCustomerOrderEmail(record, origin);
-  await sendViaSes({ fromName: "OFFside", to: record.customer.email, subject, html });
+  await sendEmail({ fromName: "OFFside", to: record.customer.email, subject, html });
 }
 
 /** Plain-text heads-up to the shop owner. */
@@ -352,7 +403,7 @@ export async function sendShopOrderEmail(record: OrderRecord): Promise<void> {
     `Payment: ${record.payment_method}${record.payment_ref ? ` (${record.payment_ref})` : ""}`,
   ].join("\n");
 
-  await sendViaSes({
+  await sendEmail({
     fromName: "OFFside Orders",
     to,
     subject: `New order ${record.order_no} — ৳${record.total}`,
