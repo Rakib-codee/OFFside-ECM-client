@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   }
   const url = new URL(request.url);
   const locale = url.searchParams.get("locale") === "bn" ? "bn" : "en";
+  const variant = url.searchParams.get("variant") === "received" ? "received" : "confirmed";
 
   const sample: OrderRecord = {
     order_no: "OFF-482913",
@@ -50,6 +51,6 @@ export async function GET(request: Request) {
     locale,
   };
 
-  const { html } = renderCustomerOrderEmail(sample, url.origin);
+  const { html } = renderCustomerOrderEmail(sample, url.origin, variant);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

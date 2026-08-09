@@ -17,7 +17,10 @@ const COPY = {
     subject: (orderNo: string) => `Order confirmed ${orderNo} — OFFside`,
     preheader: "Your jersey is being prepared. We'll call you shortly to confirm.",
     title: "Order Confirmed!",
-    sub: "Thanks for backing the badge. We'll call you shortly to confirm your order.",
+    sub: "Great news — your order is confirmed and now being prepared. Here's everything once more:",
+    receivedTitle: "Order Received!",
+    receivedSub: "Thanks for backing the badge. Here's your billing summary — we'll call you shortly to confirm the order.",
+    receivedSubject: (orderNo: string) => `Order received ${orderNo} — OFFside`,
     orderLabel: "ORDER",
     itemsHeading: "Your kit",
     printLabel: "PRINT",
@@ -28,6 +31,7 @@ const COPY = {
     deliveryHeading: "Delivering to",
     zoneDhaka: "Inside Dhaka · 1–2 working days",
     zoneOutside: "Outside Dhaka · 2–4 working days",
+    zoneCampus: "Khulna University Campus · hand delivery, FREE",
     paymentHeading: "Payment",
     cod: "Cash on Delivery",
     codNote: (total: string) => `Please keep ${total} ready for the delivery man.`,
@@ -46,7 +50,10 @@ const COPY = {
     subject: (orderNo: string) => `অর্ডার কনফার্ম ${orderNo} — OFFside`,
     preheader: "আপনার জার্সি প্রস্তুত হচ্ছে। কনফার্ম করতে আমরা শিগগিরই ফোন করব।",
     title: "অর্ডার কনফার্ম হয়েছে!",
-    sub: "সাথে থাকার জন্য ধন্যবাদ। অর্ডার কনফার্ম করতে আমরা শিগগিরই ফোন করব।",
+    sub: "সুখবর — আপনার অর্ডার কনফার্ম হয়ে এখন প্রস্তুত হচ্ছে। আরেকবার সবকিছু দেখে নিন:",
+    receivedTitle: "অর্ডার গৃহীত হয়েছে!",
+    receivedSub: "সাথে থাকার জন্য ধন্যবাদ। এই যে আপনার বিলিং সামারি — অর্ডার কনফার্ম করতে আমরা শিগগিরই ফোন করব।",
+    receivedSubject: (orderNo: string) => `অর্ডার গৃহীত ${orderNo} — OFFside`,
     orderLabel: "অর্ডার",
     itemsHeading: "আপনার কিট",
     printLabel: "প্রিন্ট",
@@ -57,6 +64,7 @@ const COPY = {
     deliveryHeading: "ডেলিভারি ঠিকানা",
     zoneDhaka: "ঢাকার ভিতরে · ১–২ কর্মদিবস",
     zoneOutside: "ঢাকার বাইরে · ২–৪ কর্মদিবস",
+    zoneCampus: "খুলনা বিশ্ববিদ্যালয় ক্যাম্পাস · হাতে হাতে ডেলিভারি, ফ্রি",
     paymentHeading: "পেমেন্ট",
     cod: "ক্যাশ অন ডেলিভারি",
     codNote: (total: string) => `ডেলিভারি ম্যানের জন্য ${total} প্রস্তুত রাখুন।`,
@@ -114,11 +122,23 @@ function itemRowsHtml(record: OrderRecord, L: (typeof COPY)["en"]): string {
     .join("");
 }
 
-export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
+export type CustomerEmailVariant = "received" | "confirmed";
+
+export function renderCustomerOrderEmail(
+  record: OrderRecord,
+  origin: string,
+  variant: CustomerEmailVariant = "confirmed",
+): {
   subject: string;
   html: string;
 } {
   const L = COPY[record.locale === "bn" ? "bn" : "en"];
+  const isReceived = variant === "received";
+  const heroColor = isReceived ? "#f59e0b" : "#34c759";
+  const heroIcon = isReceived ? "🧾" : "✓";
+  const heroTitle = isReceived ? L.receivedTitle : L.title;
+  const heroSub = isReceived ? L.receivedSub : L.sub;
+  const subject = isReceived ? L.receivedSubject(record.order_no) : L.subject(record.order_no);
   const whatsappDigits = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, "");
   const whatsappHref = whatsappDigits
     ? `https://wa.me/${whatsappDigits.startsWith("88") ? whatsappDigits : `88${whatsappDigits}`}`
@@ -146,7 +166,7 @@ export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
 <meta name="color-scheme" content="dark">
 <style>
   @keyframes op-pop { 0% { transform: scale(0.5); opacity: 0; } 65% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
-  @keyframes op-ring { 0% { box-shadow: 0 0 0 0 rgba(52,199,89,0.55); } 100% { box-shadow: 0 0 0 24px rgba(52,199,89,0); } }
+  @keyframes op-ring { 0% { box-shadow: 0 0 0 0 ${isReceived ? "rgba(245,158,11,0.5)" : "rgba(52,199,89,0.55)"}; } 100% { box-shadow: 0 0 0 24px rgba(0,0,0,0); } }
   @keyframes op-shimmer { 0% { background-position: -300% 0; } 100% { background-position: 300% 0; } }
   .op-check { animation: op-pop 0.7s cubic-bezier(0.34,1.56,0.64,1) both, op-ring 1.6s ease-out 0.5s 3; }
   .op-bar { background-size: 300% 100% !important; animation: op-shimmer 3s linear infinite; }
@@ -168,9 +188,9 @@ export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr><td align="center">
-          <div class="op-check" style="width:74px;height:74px;border-radius:50%;background:#34c759;color:#ffffff;font-size:36px;font-weight:800;line-height:74px;text-align:center;">✓</div>
-          <h1 style="margin:22px 0 8px;color:#ffffff;font-size:27px;font-weight:800;">${L.title}</h1>
-          <p style="margin:0 0 20px;color:#a0a0a0;font-size:14px;line-height:1.6;">${L.sub}</p>
+          <div class="op-check" style="width:74px;height:74px;border-radius:50%;background:${heroColor};color:#ffffff;font-size:36px;font-weight:800;line-height:74px;text-align:center;">${heroIcon}</div>
+          <h1 style="margin:22px 0 8px;color:#ffffff;font-size:27px;font-weight:800;">${heroTitle}</h1>
+          <p style="margin:0 0 20px;color:#a0a0a0;font-size:14px;line-height:1.6;">${heroSub}</p>
           <div style="display:inline-block;padding:9px 20px;border-radius:999px;background:#1a1a1a;border:1px solid #2a2a2a;">
             <span style="color:#666666;font-size:11px;font-weight:700;letter-spacing:2px;">${L.orderLabel}</span>
             <span style="color:#ffffff;font-size:15px;font-weight:800;margin-left:8px;">${escapeHtml(record.order_no)}</span>
@@ -201,7 +221,7 @@ export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
             <div style="color:#666666;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;">${L.deliveryHeading.toUpperCase()}</div>
             <div style="color:#ffffff;font-size:13px;font-weight:600;">${escapeHtml(record.customer.name)}</div>
             <div style="color:#a0a0a0;font-size:12px;margin-top:3px;line-height:1.5;">${escapeHtml(record.customer.address)}, ${escapeHtml(record.customer.district)}</div>
-            <div style="color:#a0a0a0;font-size:12px;margin-top:3px;">${record.customer.zone === "dhaka" ? L.zoneDhaka : L.zoneOutside}</div>
+            <div style="color:#a0a0a0;font-size:12px;margin-top:3px;">${record.customer.zone === "campus" ? L.zoneCampus : record.customer.zone === "dhaka" ? L.zoneDhaka : L.zoneOutside}</div>
           </td>
           <td style="width:50%;padding:16px;background:#1a1a1a;border:1px solid #2a2a2a;border-left:none;border-radius:0 12px 12px 0;vertical-align:top;">
             <div style="color:#666666;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;">${L.paymentHeading.toUpperCase()}</div>
@@ -232,7 +252,7 @@ export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
 </body>
 </html>`;
 
-  return { subject: L.subject(record.order_no), html };
+  return { subject, html };
 }
 
 interface EmailSender {
@@ -368,11 +388,15 @@ async function sendViaSes(message: EmailMessage): Promise<void> {
 }
 
 /** The pretty confirmation to the customer — only when they gave an email. */
-export async function sendCustomerOrderEmail(record: OrderRecord, origin: string): Promise<void> {
+export async function sendCustomerOrderEmail(
+  record: OrderRecord,
+  origin: string,
+  variant: CustomerEmailVariant = "confirmed",
+): Promise<void> {
   if (!record.customer.email) {
     return;
   }
-  const { subject, html } = renderCustomerOrderEmail(record, origin);
+  const { subject, html } = renderCustomerOrderEmail(record, origin, variant);
   await sendEmail({ fromName: "OFFside", to: record.customer.email, subject, html });
 }
 

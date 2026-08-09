@@ -325,6 +325,7 @@ export default function CheckoutClient() {
               <div className="flex flex-col gap-3" role="radiogroup" aria-label={t("checkout.shippingTitle")}>
                 {(
                   [
+                    { key: "campus" as const, title: t("checkout.campus"), detail: t("checkout.etaCampus") },
                     { key: "dhaka" as const, title: t("checkout.insideDhaka"), detail: t("checkout.etaInside") },
                     { key: "outside" as const, title: t("checkout.outsideDhaka"), detail: t("checkout.etaOutside") },
                   ]

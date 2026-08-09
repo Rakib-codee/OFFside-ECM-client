@@ -18,9 +18,10 @@ interface OrderCardProps {
   order: AdminOrder;
   isNew: boolean;
   onStatusChange: (id: string, status: OrderStatus) => void;
+  onDelete: (order: AdminOrder) => void;
 }
 
-export default function OrderCard({ order, isNew, onStatusChange }: OrderCardProps) {
+export default function OrderCard({ order, isNew, onStatusChange, onDelete }: OrderCardProps) {
   const products = useProducts();
   const [hasCopied, setHasCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,6 +135,13 @@ export default function OrderCard({ order, isNew, onStatusChange }: OrderCardPro
           </a>
           <button type="button" onClick={handleCopyAddress} className={actionClass}>
             {hasCopied ? "Copied ✓" : "Copy address"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(order)}
+            className="rounded-lg border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+          >
+            Delete
           </button>
         </div>
         <div className="text-sm">

@@ -4,7 +4,7 @@ export const FREE_SHIPPING_THRESHOLD = 2500;
 export const DHAKA_SHIPPING_RATE = 70;
 export const OUTSIDE_DHAKA_SHIPPING_RATE = 130;
 
-export type DeliveryZone = "dhaka" | "outside";
+export type DeliveryZone = "dhaka" | "outside" | "campus";
 
 interface ShippingRates {
   dhakaRate: number;
@@ -23,6 +23,10 @@ export function shippingFor(
   subtotal: number,
   rates: ShippingRates = DEFAULT_RATES,
 ): number {
+  // Hand delivery on Khulna University campus is always free
+  if (zone === "campus") {
+    return 0;
+  }
   if (subtotal === 0 || subtotal >= rates.freeShippingThreshold) {
     return 0;
   }

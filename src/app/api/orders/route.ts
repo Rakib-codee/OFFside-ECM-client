@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-auth";
 import { sendCustomerOrderEmail, sendShopOrderEmail } from "@/lib/email";
 import {
+  deleteOrder,
   generateOrderNo,
+  getOrderById,
   insertOrder,
   isDbConfigured,
   listOrders,
@@ -34,7 +36,12 @@ export async function POST(request: Request) {
   }
   // Notifications are best-effort — never block the customer
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-  await Promise.all([sendShopOrderEmail(record), sendCustomerOrderEmail(record, origin)]);
+  // Customer gets the billing receipt now; the pretty confirmation follows
+  // when the admin confirms the order from the dashboard
+  await Promise.all([
+    sendShopOrderEmail(record),
+    sendCustomerOrderEmail(record, origin, "received"),
+  ]);
 
   return NextResponse.json({
     orderNo: record.order_no,
@@ -75,9 +82,31 @@ export async function PATCH(request: Request) {
   if (!id || !ORDER_STATUSES.includes(status as OrderStatus)) {
     return NextResponse.json({ error: "Invalid id or status" }, { status: 400 });
   }
+  // Confirming an order triggers the customer's confirmation email (once)
+  const previous = status === "confirmed" ? await getOrderById(id) : null;
   const ok = await updateOrderStatus(id, status as OrderStatus);
   if (!ok) {
     return NextResponse.json({ error: "Update failed" }, { status: 502 });
+  }
+  if (previous && previous.status !== "confirmed" && previous.customer.email) {
+    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+    await sendCustomerOrderEmail(previous, origin, "confirmed");
+  }
+  return NextResponse.json({ ok: true });
+}
+
+/** Admin: delete an order permanently. */
+export async function DELETE(request: Request) {
+  if (!isAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  }
+  const ok = await deleteOrder(id);
+  if (!ok) {
+    return NextResponse.json({ error: "Delete failed" }, { status: 502 });
   }
   return NextResponse.json({ ok: true });
 }

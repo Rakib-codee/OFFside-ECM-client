@@ -10,6 +10,8 @@ const COPY = {
     title: "Shipping & Returns",
     subtitle: "Nationwide delivery, honest timelines, easy exchanges.",
     deliveryHeading: "Delivery charges & timelines",
+    zoneCampus: "Khulna University Campus",
+    zoneCampusEta: "On-campus hand delivery",
     zoneDhaka: "Inside Dhaka",
     zoneDhakaEta: "1–2 working days",
     zoneOutside: "Outside Dhaka",
@@ -35,6 +37,8 @@ const COPY = {
     title: "শিপিং ও রিটার্ন",
     subtitle: "সারাদেশে ডেলিভারি, সঠিক সময়ের প্রতিশ্রুতি, সহজ এক্সচেঞ্জ।",
     deliveryHeading: "ডেলিভারি চার্জ ও সময়",
+    zoneCampus: "খুলনা বিশ্ববিদ্যালয় ক্যাম্পাস",
+    zoneCampusEta: "ক্যাম্পাসে হাতে হাতে ডেলিভারি",
     zoneDhaka: "ঢাকার ভিতরে",
     zoneDhakaEta: "১–২ কর্মদিবস",
     zoneOutside: "ঢাকার বাইরে",
@@ -64,6 +68,7 @@ export default function ShippingContent() {
   const L = COPY[locale];
 
   const zones = [
+    { name: L.zoneCampus, eta: L.zoneCampusEta, cost: 0 },
     { name: L.zoneDhaka, eta: L.zoneDhakaEta, cost: settings.dhakaRate },
     { name: L.zoneOutside, eta: L.zoneOutsideEta, cost: settings.outsideRate },
   ];
@@ -72,12 +77,14 @@ export default function ShippingContent() {
     <InfoShell title={L.title} subtitle={L.subtitle}>
       <section>
         <h2 className="mb-4 font-display text-xl font-semibold">{L.deliveryHeading}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           {zones.map((zone) => (
             <div key={zone.name} className="rounded-2xl border border-line bg-card p-5">
               <p className="font-medium">{zone.name}</p>
               <p className="mt-1 text-sm text-secondary">{zone.eta}</p>
-              <p className="mt-3 font-display text-2xl font-semibold tnum">{formatPrice(zone.cost)}</p>
+              <p className={`mt-3 font-display text-2xl font-semibold tnum ${zone.cost === 0 ? "text-success" : ""}`}>
+                {zone.cost === 0 ? "FREE" : formatPrice(zone.cost)}
+              </p>
             </div>
           ))}
         </div>

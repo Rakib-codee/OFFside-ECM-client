@@ -103,6 +103,20 @@ export default function Dashboard({ isDbReady, initialOrders }: DashboardProps) 
     }
   };
 
+  const handleDeleteOrder = async (order: AdminOrder) => {
+    if (!window.confirm(`Delete order ${order.order_no} permanently? This cannot be undone.`)) {
+      return;
+    }
+    const response = await fetch(`/api/orders?id=${encodeURIComponent(order.id)}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setError("Delete failed — try again.");
+      return;
+    }
+    setOrders((current) => current?.filter((entry) => entry.id !== order.id) ?? current);
+  };
+
   const handleLogout = async () => {
     await fetch("/api/admin/login", { method: "DELETE" });
     window.location.reload();
@@ -256,6 +270,7 @@ export default function Dashboard({ isDbReady, initialOrders }: DashboardProps) 
               order={order}
               isNew={newIds.has(order.id)}
               onStatusChange={handleStatusChange}
+              onDelete={handleDeleteOrder}
             />
           ))}
         </ul>

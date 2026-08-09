@@ -101,7 +101,8 @@ export async function validateAndPriceOrder(input: unknown): Promise<ValidationR
   if (district.length < 2 || district.length > 60) {
     return { ok: false, error: "Invalid district" };
   }
-  if (order.zone !== "dhaka" && order.zone !== "outside") {
+  const zone = order.zone;
+  if (zone !== "dhaka" && zone !== "outside" && zone !== "campus") {
     return { ok: false, error: "Invalid delivery zone" };
   }
   if (!["cod", "bkash", "nagad", "sslcommerz"].includes(order.paymentMethod as string)) {
@@ -146,12 +147,12 @@ export async function validateAndPriceOrder(input: unknown): Promise<ValidationR
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const shipping = shippingFor(order.zone, subtotal, settings);
+  const shipping = shippingFor(zone, subtotal, settings);
 
   return {
     ok: true,
     record: {
-      customer: { name, phone, email: email || undefined, address, district, zone: order.zone },
+      customer: { name, phone, email: email || undefined, address, district, zone },
       items,
       subtotal,
       shipping,
@@ -200,6 +201,38 @@ export async function listOrders(): Promise<unknown[] | null> {
   } catch (error) {
     console.error("Order list error:", error);
     return null;
+  }
+}
+
+export async function getOrderById(id: string): Promise<(OrderRecord & { id: string }) | null> {
+  try {
+    const response = await supabaseRest(
+      `orders?id=eq.${encodeURIComponent(id)}&select=*`,
+      { method: "GET" },
+    );
+    if (!response.ok) {
+      return null;
+    }
+    const rows = (await response.json()) as (OrderRecord & { id: string })[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteOrder(id: string): Promise<boolean> {
+  try {
+    const response = await supabaseRest(`orders?id=eq.${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+    if (!response.ok) {
+      console.error("Order delete failed:", response.status, await response.text());
+    }
+    return response.ok;
+  } catch (error) {
+    console.error("Order delete error:", error);
+    return false;
   }
 }
 
