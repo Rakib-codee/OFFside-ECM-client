@@ -9,6 +9,7 @@ import {
   formatOrderDate,
   STATUS_STYLES,
   whatsAppLink,
+  zoneLabel,
   type AdminOrder,
 } from "./admin-utils";
 
@@ -80,7 +81,7 @@ export default function OrderCard({ order, isNew, onStatusChange, onDelete }: Or
         <span className="text-secondary tnum">{order.customer.phone}</span>
       </p>
       <p className="mb-3 text-sm text-secondary">
-        {order.customer.address}, {order.customer.district} ({order.customer.zone})
+        {order.customer.address}, {order.customer.district} ({zoneLabel(order.customer.zone)})
       </p>
 
       <ul className="mb-3 border-y border-line py-2">

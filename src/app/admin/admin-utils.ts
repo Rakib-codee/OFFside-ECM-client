@@ -40,6 +40,14 @@ export const STATUS_STYLES: Record<OrderStatus, string> = {
   cancelled: "text-muted bg-elevated border-line",
 };
 
+/** Human labels for delivery zone keys (keys stay stable in the DB). */
+export function zoneLabel(zone: string): string {
+  if (zone === "campus") return "KU Campus";
+  if (zone === "dhaka") return "Inside Khulna";
+  if (zone === "outside") return "Outside Khulna";
+  return zone;
+}
+
 /** BD numbers (01XXXXXXXXX) need the 88 country prefix for wa.me. */
 export function whatsAppLink(phone: string): string {
   const digits = phone.replace(/\D/g, "");

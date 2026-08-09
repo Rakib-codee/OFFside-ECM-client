@@ -21,6 +21,14 @@ const COPY = {
     receivedTitle: "Order Received!",
     receivedSub: "Thanks for backing the badge. Here's your billing summary — we'll call you shortly to confirm the order.",
     receivedSubject: (orderNo: string) => `Order received ${orderNo} — OFFside`,
+    shippedTitle: "On Its Way!",
+    shippedSub: "Your jersey has left our hands and is riding with the courier. Keep your phone on — they'll call before arriving.",
+    shippedSubject: (orderNo: string) => `Your order ${orderNo} has shipped — OFFside`,
+    deliveredTitle: "Delivered — Thank You! 🏆",
+    deliveredSub: "Your kit has arrived! Thank you for backing the badge with OFFside — fans like you are the 12th player we play for. Wear it loud, wear it proud.",
+    deliveredSubject: (orderNo: string) => `Delivered! Thank you ${orderNo} — OFFside`,
+    deliveredNote: "Any problem with size or print? Message us within 7 days — easy exchange, no drama. It would also make our day to see you in the kit — tag us on Facebook!",
+    shopAgainCta: "Shop new kits",
     orderLabel: "ORDER",
     itemsHeading: "Your kit",
     printLabel: "PRINT",
@@ -29,8 +37,8 @@ const COPY = {
     free: "Free",
     total: "Total",
     deliveryHeading: "Delivering to",
-    zoneDhaka: "Inside Dhaka · 1–2 working days",
-    zoneOutside: "Outside Dhaka · 2–4 working days",
+    zoneDhaka: "Inside Khulna City · 1–2 working days",
+    zoneOutside: "Outside Khulna · 2–4 working days",
     zoneCampus: "Khulna University Campus · hand delivery, FREE",
     paymentHeading: "Payment",
     cod: "Cash on Delivery",
@@ -54,6 +62,14 @@ const COPY = {
     receivedTitle: "অর্ডার গৃহীত হয়েছে!",
     receivedSub: "সাথে থাকার জন্য ধন্যবাদ। এই যে আপনার বিলিং সামারি — অর্ডার কনফার্ম করতে আমরা শিগগিরই ফোন করব।",
     receivedSubject: (orderNo: string) => `অর্ডার গৃহীত ${orderNo} — OFFside`,
+    shippedTitle: "রওনা দিয়েছে!",
+    shippedSub: "আপনার জার্সি আমাদের হাত ছেড়ে কুরিয়ারে উঠে গেছে। ফোনটা কাছে রাখুন — পৌঁছানোর আগে কল আসবে।",
+    shippedSubject: (orderNo: string) => `আপনার অর্ডার ${orderNo} শিপ হয়েছে — OFFside`,
+    deliveredTitle: "ডেলিভারড — ধন্যবাদ! 🏆",
+    deliveredSub: "আপনার কিট পৌঁছে গেছে! OFFside-এর সাথে থাকার জন্য অসংখ্য ধন্যবাদ — আপনার মতো ভক্তরাই আমাদের দ্বাদশ খেলোয়াড়। গর্বে পরুন, জোরে সমর্থন করুন।",
+    deliveredSubject: (orderNo: string) => `ডেলিভারড! ধন্যবাদ ${orderNo} — OFFside`,
+    deliveredNote: "সাইজ বা প্রিন্টে কোনো সমস্যা? ৭ দিনের মধ্যে মেসেজ করুন — সহজ এক্সচেঞ্জ, কোনো ঝামেলা নেই। কিট পরা ছবি ফেসবুকে ট্যাগ করলে আমাদের দিনটাই ভালো হয়ে যাবে!",
+    shopAgainCta: "নতুন কিট দেখুন",
     orderLabel: "অর্ডার",
     itemsHeading: "আপনার কিট",
     printLabel: "প্রিন্ট",
@@ -62,8 +78,8 @@ const COPY = {
     free: "ফ্রি",
     total: "মোট",
     deliveryHeading: "ডেলিভারি ঠিকানা",
-    zoneDhaka: "ঢাকার ভিতরে · ১–২ কর্মদিবস",
-    zoneOutside: "ঢাকার বাইরে · ২–৪ কর্মদিবস",
+    zoneDhaka: "খুলনা শহরের ভিতরে · ১–২ কর্মদিবস",
+    zoneOutside: "খুলনার বাইরে · ২–৪ কর্মদিবস",
     zoneCampus: "খুলনা বিশ্ববিদ্যালয় ক্যাম্পাস · হাতে হাতে ডেলিভারি, ফ্রি",
     paymentHeading: "পেমেন্ট",
     cod: "ক্যাশ অন ডেলিভারি",
@@ -122,7 +138,7 @@ function itemRowsHtml(record: OrderRecord, L: (typeof COPY)["en"]): string {
     .join("");
 }
 
-export type CustomerEmailVariant = "received" | "confirmed";
+export type CustomerEmailVariant = "received" | "confirmed" | "shipped" | "delivered";
 
 export function renderCustomerOrderEmail(
   record: OrderRecord,
@@ -133,12 +149,23 @@ export function renderCustomerOrderEmail(
   html: string;
 } {
   const L = COPY[record.locale === "bn" ? "bn" : "en"];
-  const isReceived = variant === "received";
-  const heroColor = isReceived ? "#f59e0b" : "#34c759";
-  const heroIcon = isReceived ? "🧾" : "✓";
-  const heroTitle = isReceived ? L.receivedTitle : L.title;
-  const heroSub = isReceived ? L.receivedSub : L.sub;
-  const subject = isReceived ? L.receivedSubject(record.order_no) : L.subject(record.order_no);
+  const HERO: Record<CustomerEmailVariant, { color: string; icon: string; title: string; sub: string; subject: string }> = {
+    received: { color: "#f59e0b", icon: "🧾", title: L.receivedTitle, sub: L.receivedSub, subject: L.receivedSubject(record.order_no) },
+    confirmed: { color: "#34c759", icon: "✓", title: L.title, sub: L.sub, subject: L.subject(record.order_no) },
+    shipped: { color: "#007aff", icon: "🚚", title: L.shippedTitle, sub: L.shippedSub, subject: L.shippedSubject(record.order_no) },
+    delivered: { color: "#ff3b30", icon: "🏆", title: L.deliveredTitle, sub: L.deliveredSub, subject: L.deliveredSubject(record.order_no) },
+  };
+  const hero = HERO[variant];
+  const heroColor = hero.color;
+  const heroIcon = hero.icon;
+  const heroTitle = hero.title;
+  const heroSub = hero.sub;
+  const subject = hero.subject;
+  // Delivered: a warm extra note + "shop again" replaces the track button
+  const deliveredNoteHtml =
+    variant === "delivered"
+      ? `<div style="margin:26px 0 0;padding:16px 18px;border-radius:12px;background:rgba(255,59,48,0.07);border:1px solid rgba(255,59,48,0.3);color:#e8e8e8;font-size:13px;line-height:1.7;">❤️ ${L.deliveredNote}</div>`
+      : "";
   const whatsappDigits = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, "");
   const whatsappHref = whatsappDigits
     ? `https://wa.me/${whatsappDigits.startsWith("88") ? whatsappDigits : `88${whatsappDigits}`}`
@@ -166,7 +193,7 @@ export function renderCustomerOrderEmail(
 <meta name="color-scheme" content="dark">
 <style>
   @keyframes op-pop { 0% { transform: scale(0.5); opacity: 0; } 65% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
-  @keyframes op-ring { 0% { box-shadow: 0 0 0 0 ${isReceived ? "rgba(245,158,11,0.5)" : "rgba(52,199,89,0.55)"}; } 100% { box-shadow: 0 0 0 24px rgba(0,0,0,0); } }
+  @keyframes op-ring { 0% { box-shadow: 0 0 0 0 ${heroColor}88; } 100% { box-shadow: 0 0 0 24px rgba(0,0,0,0); } }
   @keyframes op-shimmer { 0% { background-position: -300% 0; } 100% { background-position: 300% 0; } }
   .op-check { animation: op-pop 0.7s cubic-bezier(0.34,1.56,0.64,1) both, op-ring 1.6s ease-out 0.5s 3; }
   .op-bar { background-size: 300% 100% !important; animation: op-shimmer 3s linear infinite; }
@@ -230,9 +257,13 @@ export function renderCustomerOrderEmail(
         </tr>
       </table>
 
+      ${deliveredNoteHtml}
+
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:30px;">
         <tr><td align="center">
-          ${button(`${origin}/track-order`, L.trackCta, "#ff3b30")}
+          ${variant === "delivered"
+            ? button(`${origin}/shop`, L.shopAgainCta, "#ff3b30")
+            : button(`${origin}/track-order`, L.trackCta, "#ff3b30")}
           ${whatsappHref ? button(whatsappHref, L.whatsappCta, "#25D366") : ""}
           ${button("https://m.me/61592579166791", L.messengerCta, "#007aff")}
         </td></tr>

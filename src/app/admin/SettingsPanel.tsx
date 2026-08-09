@@ -74,8 +74,8 @@ export default function SettingsPanel() {
   }
 
   const fields: { key: keyof ShopSettings; label: string; hint: string }[] = [
-    { key: "dhakaRate", label: "Delivery charge — Inside Dhaka (৳)", hint: "Charged when the subtotal is below the free-delivery amount" },
-    { key: "outsideRate", label: "Delivery charge — Outside Dhaka (৳)", hint: "For orders shipped outside Dhaka" },
+    { key: "dhakaRate", label: "Delivery charge — Inside Khulna City (৳)", hint: "Charged when the subtotal is below the free-delivery amount" },
+    { key: "outsideRate", label: "Delivery charge — Outside Khulna (৳)", hint: "For orders couriered outside Khulna" },
     { key: "freeShippingThreshold", label: "Free delivery from (৳)", hint: "Orders at or above this subtotal ship free" },
   ];
 
@@ -105,10 +105,14 @@ export default function SettingsPanel() {
             </div>
           )}
           <p className="mt-3 text-xs text-muted">
-            Preview the customer email:{" "}
-            <a href="/api/admin/email-preview?locale=en" target="_blank" className="text-accent-alt underline">English</a>
+            Email previews (বাংলা):{" "}
+            <a href="/api/admin/email-preview?locale=bn&variant=received" target="_blank" className="text-accent-alt underline">Receipt</a>
             {" · "}
-            <a href="/api/admin/email-preview?locale=bn" target="_blank" className="text-accent-alt underline">বাংলা</a>
+            <a href="/api/admin/email-preview?locale=bn&variant=confirmed" target="_blank" className="text-accent-alt underline">Confirmed</a>
+            {" · "}
+            <a href="/api/admin/email-preview?locale=bn&variant=shipped" target="_blank" className="text-accent-alt underline">Shipped</a>
+            {" · "}
+            <a href="/api/admin/email-preview?locale=bn&variant=delivered" target="_blank" className="text-accent-alt underline">Delivered</a>
           </p>
         </div>
       ) : null}

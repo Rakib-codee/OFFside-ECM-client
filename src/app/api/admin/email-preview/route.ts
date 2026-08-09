@@ -10,7 +10,12 @@ export async function GET(request: Request) {
   }
   const url = new URL(request.url);
   const locale = url.searchParams.get("locale") === "bn" ? "bn" : "en";
-  const variant = url.searchParams.get("variant") === "received" ? "received" : "confirmed";
+  const requested = url.searchParams.get("variant");
+  const variant = (["received", "confirmed", "shipped", "delivered"] as const).includes(
+    requested as never,
+  )
+    ? (requested as "received" | "confirmed" | "shipped" | "delivered")
+    : "confirmed";
 
   const sample: OrderRecord = {
     order_no: "OFF-482913",

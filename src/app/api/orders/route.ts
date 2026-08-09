@@ -82,15 +82,16 @@ export async function PATCH(request: Request) {
   if (!id || !ORDER_STATUSES.includes(status as OrderStatus)) {
     return NextResponse.json({ error: "Invalid id or status" }, { status: 400 });
   }
-  // Confirming an order triggers the customer's confirmation email (once)
-  const previous = status === "confirmed" ? await getOrderById(id) : null;
+  // Status milestones email the customer: confirmed → shipped → delivered
+  const isMilestone = status === "confirmed" || status === "shipped" || status === "delivered";
+  const previous = isMilestone ? await getOrderById(id) : null;
   const ok = await updateOrderStatus(id, status as OrderStatus);
   if (!ok) {
     return NextResponse.json({ error: "Update failed" }, { status: 502 });
   }
-  if (previous && previous.status !== "confirmed" && previous.customer.email) {
+  if (previous && previous.status !== status && previous.customer.email) {
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-    await sendCustomerOrderEmail(previous, origin, "confirmed");
+    await sendCustomerOrderEmail(previous, origin, status as "confirmed" | "shipped" | "delivered");
   }
   return NextResponse.json({ ok: true });
 }
