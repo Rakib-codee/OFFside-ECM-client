@@ -7,6 +7,7 @@ import type { ShopSettings } from "@/lib/catalog";
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [isDbReady, setIsDbReady] = useState(true);
+  const [emailStatus, setEmailStatus] = useState<{ configured: boolean; shopEmailSet: boolean } | null>(null);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -14,9 +15,18 @@ export default function SettingsPanel() {
     void (async () => {
       try {
         const response = await fetch("/api/admin/settings");
-        const body = (await response.json()) as { settings?: ShopSettings; dbReady?: boolean };
+        const body = (await response.json()) as {
+          settings?: ShopSettings;
+          dbReady?: boolean;
+          emailConfigured?: boolean;
+          shopEmailSet?: boolean;
+        };
         setSettings(body.settings ?? null);
         setIsDbReady(body.dbReady ?? false);
+        setEmailStatus({
+          configured: body.emailConfigured ?? false,
+          shopEmailSet: body.shopEmailSet ?? false,
+        });
       } catch {
         setMessage({ kind: "error", text: "Failed to load settings" });
       }
@@ -70,7 +80,39 @@ export default function SettingsPanel() {
   ];
 
   return (
-    <div className="max-w-lg rounded-2xl border border-line bg-card p-6">
+    <div className="flex max-w-lg flex-col gap-6">
+      {emailStatus ? (
+        <div className="rounded-2xl border border-line bg-card p-6">
+          <h3 className="mb-3 font-display text-xl font-semibold">Order emails</h3>
+          {emailStatus.configured ? (
+            <p className="text-sm text-success">
+              ✓ Connected — customers who give an email get a branded confirmation
+              {emailStatus.shopEmailSet ? "; the shop is notified too." : "."}
+            </p>
+          ) : (
+            <div className="text-sm leading-relaxed text-secondary">
+              <p className="mb-2 font-medium text-accent">✗ Not connected — no emails are being sent.</p>
+              <ol className="list-inside list-decimal space-y-1">
+                <li>Create a free account at resend.com and copy an API key</li>
+                <li>Put it in <code className="text-primary">RESEND_API_KEY</code> in <code>.env.local</code> (or Vercel env)</li>
+                <li>Restart the server</li>
+              </ol>
+              <p className="mt-2 text-muted">
+                Note: the default sender only delivers to your own Resend account email.
+                Verify your domain in Resend and set <code>ORDER_EMAIL_FROM</code> to reach real customers.
+              </p>
+            </div>
+          )}
+          <p className="mt-3 text-xs text-muted">
+            Preview the customer email:{" "}
+            <a href="/api/admin/email-preview?locale=en" target="_blank" className="text-accent-alt underline">English</a>
+            {" · "}
+            <a href="/api/admin/email-preview?locale=bn" target="_blank" className="text-accent-alt underline">বাংলা</a>
+          </p>
+        </div>
+      ) : null}
+
+      <div className="rounded-2xl border border-line bg-card p-6">
       <h3 className="mb-5 font-display text-xl font-semibold">Delivery charges</h3>
       <div className="flex flex-col gap-4">
         {fields.map((field) => (
@@ -102,6 +144,7 @@ export default function SettingsPanel() {
       >
         {isSaving ? "Saving…" : "Save settings"}
       </button>
+      </div>
     </div>
   );
 }

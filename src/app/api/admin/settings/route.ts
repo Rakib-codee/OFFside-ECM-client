@@ -8,7 +8,12 @@ export async function GET(request: Request) {
   if (!isAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({ settings: await getSettings(), dbReady: isDbConfigured() });
+  return NextResponse.json({
+    settings: await getSettings(),
+    dbReady: isDbConfigured(),
+    emailConfigured: Boolean(process.env.RESEND_API_KEY),
+    shopEmailSet: Boolean(process.env.ORDER_NOTIFY_EMAIL),
+  });
 }
 
 /** Admin: update delivery charges and the free-delivery threshold. */

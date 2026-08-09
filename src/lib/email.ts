@@ -238,6 +238,9 @@ export function renderCustomerOrderEmail(record: OrderRecord, origin: string): {
 async function sendViaResend(payload: Record<string, unknown>): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
+    console.warn(
+      "[email] RESEND_API_KEY is not set — email skipped. Add it to .env.local and restart the server.",
+    );
     return;
   }
   try {
