@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import gsap from "gsap";
 import MagneticButton from "@/components/fx/MagneticButton";
 import TransitionLink from "@/components/fx/TransitionLink";
-import JerseyGraphic from "@/components/product/JerseyGraphic";
 import { EASE_HERO, prefersReducedMotion } from "@/lib/motion";
 import { useT } from "@/lib/i18n/locale";
+
+// WebGL scene loads client-side only, after the shell paints
+const HeroScene = dynamic(() => import("./HeroScene"), { ssr: false });
 
 const SCROLL_CUE_HIDE_Y = 200;
 
@@ -69,13 +72,8 @@ export default function Hero() {
             "var(--t-base)",
         }}
       />
-      {/* Oversized drifting jerseys */}
-      <div aria-hidden="true" className="absolute -right-24 top-1/2 hidden w-[480px] -translate-y-1/2 rotate-12 opacity-[0.13] motion-safe:animate-[float-slow_9s_ease-in-out_infinite] lg:block">
-        <JerseyGraphic colors={{ body: "#ff3b30", sleeve: "#b3122f", accent: "#ffffff", text: "#ffffff" }} view="back" number={10} />
-      </div>
-      <div aria-hidden="true" className="absolute -left-32 bottom-0 hidden w-[380px] -rotate-6 opacity-[0.09] motion-safe:animate-[float-slow_11s_ease-in-out_infinite] lg:block">
-        <JerseyGraphic colors={{ body: "#007aff", sleeve: "#1c3f94", accent: "#ffffff", text: "#ffffff" }} view="back" number={7} />
-      </div>
+      {/* Three.js football + particle field */}
+      <HeroScene />
       {/* Bottom fade overlay */}
       <div
         aria-hidden="true"
