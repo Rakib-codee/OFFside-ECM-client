@@ -2,15 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { isFinePointer, prefersReducedMotion } from "@/lib/motion";
 
+const MODEL_URL = "/models/player/Superhero_Male_FullBody.gltf";
 const PARTICLE_COUNT = 1600;
 const ACCENT = 0xff3b30;
 const ACCENT_ALT = 0x007aff;
-const JERSEY_RED = 0xd41830;
-const SKIN = 0x2b2b33;
+const JERSEY_RED = 0xc41230;
+const PLAYER_HEIGHT = 4.3;
+const FLOOR_Y = -2.15;
 
-/** Canvas texture for the back print: OFFSIDE arc + big number 10. */
+/** Canvas texture for the back print: OFFSIDE + big number 10. */
 function makeBackPrintTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
@@ -28,11 +32,39 @@ function makeBackPrintTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/** Soft radial contact shadow with a faint brand-red rim. */
+function makeShadowTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createRadialGradient(128, 128, 10, 128, 128, 126);
+  gradient.addColorStop(0, "rgba(0,0,0,0.85)");
+  gradient.addColorStop(0.55, "rgba(120,10,20,0.35)");
+  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(canvas);
+}
+
+/** Relaxed athletic stance applied over the bind pose (UE-style bone names). */
+const POSE: Record<string, [number, number, number]> = {
+  upperarm_l: [0.04, 0, -1.28],
+  upperarm_r: [0.04, 0, 1.28],
+  lowerarm_l: [0, 0.25, -0.15],
+  lowerarm_r: [0, -0.25, 0.15],
+  hand_l: [0.1, 0, -0.12],
+  hand_r: [0.1, 0, 0.12],
+  spine_02: [0.04, 0, 0],
+  neck_01: [-0.06, 0, 0],
+};
+
 /**
- * Three.js hero: a stylized low-poly footballer standing in the OFFside kit,
- * back print "OFFSIDE 10", slowly turning inside a glowing particle field lit
- * by the brand red/blue. Mouse parallax on fine pointers; static frame for
- * reduced motion. Decorative only — pointer-events: none, aria-hidden.
+ * Three.js hero: a rigged human athlete (Quaternius "Universal Base
+ * Characters", CC0) in a brand-red kit with an OFFSIDE 10 back print,
+ * posed and breathing procedurally, lit with ACES tone mapping + room
+ * environment for PBR realism, slowly turning inside the particle field.
+ * Decorative only — pointer-events: none, aria-hidden.
  */
 export default function HeroScene() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -51,7 +83,15 @@ export default function HeroScene() {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.appendChild(renderer.domElement);
+
+    // Neutral studio reflections so PBR materials read as real surfaces
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTexture;
 
     const group = new THREE.Group();
     scene.add(group);
@@ -62,110 +102,175 @@ export default function HeroScene() {
     };
     placeGroup(mount.clientWidth);
 
-    const disposables: (THREE.BufferGeometry | THREE.Material | THREE.Texture)[] = [];
-    const mesh = (
-      geometry: THREE.BufferGeometry,
-      material: THREE.Material,
-      parent: THREE.Object3D,
-      position: [number, number, number],
-      rotation?: [number, number, number],
-    ) => {
-      const m = new THREE.Mesh(geometry, material);
-      m.position.set(...position);
-      if (rotation) {
-        m.rotation.set(...rotation);
-      }
-      parent.add(m);
-      disposables.push(geometry, material);
-      return m;
-    };
-
-    /* ---------- The player ---------- */
     const player = new THREE.Group();
     group.add(player);
 
-    const jerseyMaterial = new THREE.MeshStandardMaterial({
-      color: JERSEY_RED,
-      flatShading: true,
-      roughness: 0.6,
-      metalness: 0.1,
+    /* ---------- Ground: soft contact shadow ---------- */
+    const shadowTexture = makeShadowTexture();
+    const shadowMaterial = new THREE.MeshBasicMaterial({
+      map: shadowTexture,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
     });
-    const darkMaterial = new THREE.MeshStandardMaterial({
-      color: 0x17171c,
-      flatShading: true,
-      roughness: 0.7,
-    });
-    const skinMaterial = new THREE.MeshStandardMaterial({
-      color: SKIN,
-      flatShading: true,
-      roughness: 0.55,
-      metalness: 0.25,
-    });
-    const whiteMaterial = new THREE.MeshStandardMaterial({
-      color: 0xe8e8ee,
-      flatShading: true,
-      roughness: 0.6,
-    });
+    const shadowGeometry = new THREE.PlaneGeometry(3.4, 3.4);
+    const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = FLOOR_Y + 0.01;
+    group.add(shadow);
 
-    // Torso (jersey)
-    const torso = mesh(
-      new THREE.CylinderGeometry(0.55, 0.68, 1.5, 8),
-      jerseyMaterial,
-      player,
-      [0, 0.55, 0],
-    );
-    // Collar
-    mesh(new THREE.TorusGeometry(0.3, 0.07, 6, 10), whiteMaterial, player, [0, 1.32, 0], [
-      Math.PI / 2.3,
-      0,
-      0,
-    ]);
-    // Sleeves
-    mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.55, 7), jerseyMaterial, player, [-0.78, 1.0, 0], [0, 0, Math.PI / 3.2]);
-    mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.55, 7), jerseyMaterial, player, [0.78, 1.0, 0], [0, 0, -Math.PI / 3.2]);
-    // Arms
-    const leftArm = mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.85, 7), skinMaterial, player, [-1.0, 0.35, 0], [0, 0, Math.PI / 14]);
-    const rightArm = mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.85, 7), skinMaterial, player, [1.0, 0.35, 0], [0, 0, -Math.PI / 14]);
-    // Head + hair
-    mesh(new THREE.IcosahedronGeometry(0.34, 1), skinMaterial, player, [0, 1.78, 0]);
-    mesh(new THREE.IcosahedronGeometry(0.3, 1), darkMaterial, player, [0, 1.95, -0.05]);
-    // Shorts
-    mesh(new THREE.CylinderGeometry(0.62, 0.55, 0.55, 8), darkMaterial, player, [0, -0.45, 0]);
-    // Legs
-    mesh(new THREE.CylinderGeometry(0.17, 0.14, 1.25, 7), skinMaterial, player, [-0.3, -1.3, 0]);
-    mesh(new THREE.CylinderGeometry(0.17, 0.14, 1.25, 7), skinMaterial, player, [0.3, -1.3, 0]);
-    // Socks + boots
-    mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.45, 7), jerseyMaterial, player, [-0.3, -1.75, 0]);
-    mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.45, 7), jerseyMaterial, player, [0.3, -1.75, 0]);
-    mesh(new THREE.BoxGeometry(0.3, 0.18, 0.55), darkMaterial, player, [-0.3, -2.05, 0.08]);
-    mesh(new THREE.BoxGeometry(0.3, 0.18, 0.55), darkMaterial, player, [0.3, -2.05, 0.08]);
-
-    // Back print: OFFSIDE 10
+    /* ---------- The athlete model ---------- */
     const backTexture = makeBackPrintTexture();
     const printMaterial = new THREE.MeshBasicMaterial({
       map: backTexture,
       transparent: true,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
     const printGeometry = new THREE.PlaneGeometry(1.0, 1.0);
-    disposables.push(backTexture, printMaterial, printGeometry);
-    const print = new THREE.Mesh(printGeometry, printMaterial);
-    print.position.set(0, 0.62, -0.66);
-    print.rotation.y = Math.PI;
-    player.add(print);
 
-    // Glow ring under the feet
-    const ring = mesh(
-      new THREE.RingGeometry(0.9, 1.25, 48),
-      new THREE.MeshBasicMaterial({
-        color: ACCENT,
-        transparent: true,
-        opacity: 0.22,
-        side: THREE.DoubleSide,
-      }),
-      group,
-      [0, -2.18, 0],
-      [-Math.PI / 2, 0, 0],
+    let isDisposed = false;
+    let spineBone: THREE.Object3D | null = null;
+    let headBone: THREE.Object3D | null = null;
+    const loader = new GLTFLoader();
+    loader.load(
+      MODEL_URL,
+      (gltf) => {
+        if (isDisposed) {
+          return;
+        }
+        const model = gltf.scene;
+
+        // Normalize height and stand the feet on the floor
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const scale = PLAYER_HEIGHT / size.y;
+        model.scale.setScalar(scale);
+        box.setFromObject(model);
+        model.position.y = FLOOR_Y - box.min.y;
+
+        // Relaxed stance over the bind pose
+        for (const [bone, [x, y, z]] of Object.entries(POSE)) {
+          const node = model.getObjectByName(bone);
+          if (node) {
+            node.rotation.x += x;
+            node.rotation.y += y;
+            node.rotation.z += z;
+          }
+        }
+        spineBone = model.getObjectByName("spine_02") ?? null;
+        headBone = model.getObjectByName("neck_01") ?? null;
+
+        // Realistic skin stays untouched; just ground its PBR response
+        model.traverse((node) => {
+          if (node instanceof THREE.Mesh && node.material instanceof THREE.MeshStandardMaterial) {
+            node.material.envMapIntensity = 0.85;
+          }
+        });
+
+        // Dress the athlete: red jersey, sleeves, collar and dark shorts
+        // built in the model's native units (yAt(f) = f of body height)
+        const nMinY = box.min.y / scale;
+        const H = size.y;
+        const yAt = (f: number) => nMinY + f * H;
+        const jerseyMaterial = new THREE.MeshStandardMaterial({
+          color: JERSEY_RED,
+          roughness: 0.82,
+          metalness: 0,
+        });
+        const shortsMaterial = new THREE.MeshStandardMaterial({
+          color: 0x14141a,
+          roughness: 0.85,
+          metalness: 0,
+        });
+        const dress = (
+          geometry: THREE.BufferGeometry,
+          material: THREE.MeshStandardMaterial,
+          x: number,
+          y: number,
+          rotZ = 0,
+          depthScale = 0.72,
+        ) => {
+          const piece = new THREE.Mesh(geometry, material);
+          piece.position.set(x, y, 0);
+          piece.rotation.z = rotZ;
+          piece.scale.z = depthScale;
+          model.add(piece);
+          return piece;
+        };
+        // Torso (wide at the shoulders, drops past the hips)
+        dress(new THREE.CylinderGeometry(0.13 * H, 0.11 * H, 0.33 * H, 28), jerseyMaterial, 0, yAt(0.635), 0, 0.8);
+        // Collar
+        dress(new THREE.TorusGeometry(0.055 * H, 0.014 * H, 8, 24), jerseyMaterial, 0, yAt(0.8), 0, 1).rotation.x = Math.PI / 2.2;
+        // Shorts
+        dress(new THREE.CylinderGeometry(0.115 * H, 0.125 * H, 0.13 * H, 28), shortsMaterial, 0, yAt(0.49), 0, 0.8);
+
+        // Sleeves, socks and boots ride ON the bones so they stay fitted
+        // from every turntable angle. Each piece is aligned along its bone
+        // (bone origin at the joint, pointing toward the child joint).
+        model.updateMatrixWorld(true);
+        // Sizes are fractions of the bone's own length (L), so they are
+        // immune to whatever unit scale the skeleton carries.
+        const attachAlong = (
+          boneName: string,
+          towardName: string,
+          makeMesh: (length: number) => THREE.Mesh,
+          t: number,
+          axis: THREE.Vector3,
+        ) => {
+          const bone = model.getObjectByName(boneName);
+          const toward = model.getObjectByName(towardName);
+          if (!bone || !toward) {
+            return;
+          }
+          const dir = bone.worldToLocal(toward.getWorldPosition(new THREE.Vector3()));
+          const mesh = makeMesh(dir.length());
+          mesh.quaternion.setFromUnitVectors(axis, dir.clone().normalize());
+          mesh.position.copy(dir).multiplyScalar(t);
+          bone.add(mesh);
+        };
+        const alongY = new THREE.Vector3(0, 1, 0);
+        const alongZ = new THREE.Vector3(0, 0, 1);
+        for (const side of ["l", "r"] as const) {
+          attachAlong(
+            `upperarm_${side}`,
+            `lowerarm_${side}`,
+            (L) => new THREE.Mesh(new THREE.CylinderGeometry(0.36 * L, 0.27 * L, 0.6 * L, 18), jerseyMaterial),
+            0.17,
+            alongY,
+          );
+          attachAlong(
+            `calf_${side}`,
+            `foot_${side}`,
+            (L) => new THREE.Mesh(new THREE.CylinderGeometry(0.125 * L, 0.14 * L, 0.85 * L, 16), jerseyMaterial),
+            0.5,
+            alongY,
+          );
+          attachAlong(
+            `foot_${side}`,
+            `ball_${side}`,
+            (L) => new THREE.Mesh(new THREE.BoxGeometry(0.55 * L, 0.5 * L, 1.9 * L), shortsMaterial),
+            0.68,
+            alongZ,
+          );
+        }
+
+        // OFFSIDE 10 back print, hugging the jersey's back
+        const print = new THREE.Mesh(printGeometry, printMaterial);
+        print.scale.setScalar(0.235 * H);
+        print.position.set(0, yAt(0.66), -0.105 * H);
+        print.rotation.y = Math.PI;
+        model.add(print);
+
+        player.add(model);
+        if (reduced) {
+          renderFrame();
+        }
+      },
+      undefined,
+      () => {
+        // Model failed to load — the particle field still carries the scene
+      },
     );
 
     /* ---------- Particles ---------- */
@@ -188,18 +293,20 @@ export default function HeroScene() {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    disposables.push(particleGeometry, particleMaterial);
     const particles = new THREE.Points(particleGeometry, particleMaterial);
     group.add(particles);
 
     /* ---------- Lights ---------- */
-    const redLight = new THREE.PointLight(ACCENT, 60, 30);
+    const redLight = new THREE.PointLight(ACCENT, 55, 30);
     redLight.position.set(4, 3, 4);
     scene.add(redLight);
-    const blueLight = new THREE.PointLight(ACCENT_ALT, 45, 30);
-    blueLight.position.set(-4, 1, 3);
+    const blueLight = new THREE.PointLight(ACCENT_ALT, 40, 30);
+    blueLight.position.set(-4, 1.5, 3);
     scene.add(blueLight);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    keyLight.position.set(2, 4, 5);
+    scene.add(keyLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
     /* ---------- Interaction + loop ---------- */
     const target = { x: 0, y: 0 };
@@ -217,27 +324,27 @@ export default function HeroScene() {
     const renderFrame = () => {
       const elapsed = clock.getElapsedTime();
 
-      // Player turns slowly, breathes, arms sway
-      player.rotation.y = elapsed * 0.45;
-      torso.scale.y = 1 + Math.sin(elapsed * 1.6) * 0.015;
-      player.position.y = Math.sin(elapsed * 1.6) * 0.04;
-      leftArm.rotation.z = Math.PI / 14 + Math.sin(elapsed * 1.6) * 0.06;
-      rightArm.rotation.z = -Math.PI / 14 - Math.sin(elapsed * 1.6) * 0.06;
+      // Slow turntable + breathing idle
+      player.rotation.y = elapsed * 0.35;
+      player.position.y = Math.sin(elapsed * 1.5) * 0.025;
+      if (spineBone) {
+        spineBone.rotation.x += Math.sin(elapsed * 1.5) * 0.0009;
+      }
+      if (headBone) {
+        headBone.rotation.y = Math.sin(elapsed * 0.4) * 0.12;
+      }
 
-      // Ring pulses, particles drift
-      const ringMaterial = ring.material as THREE.MeshBasicMaterial;
-      ringMaterial.opacity = 0.16 + Math.sin(elapsed * 2) * 0.08;
-      ring.scale.setScalar(1 + Math.sin(elapsed * 2) * 0.05);
       particles.rotation.y = elapsed * 0.02;
+      shadowMaterial.opacity = 0.5 + Math.sin(elapsed * 1.5) * 0.05;
 
       // Mouse parallax on the whole composition
       current.x += (target.x - current.x) * 0.04;
       current.y += (target.y - current.y) * 0.04;
       group.rotation.y = current.x * 0.2;
-      group.rotation.x = current.y * 0.1;
+      group.rotation.x = current.y * 0.08;
 
-      redLight.intensity = 55 + Math.sin(elapsed * 0.8) * 12;
-      blueLight.intensity = 42 + Math.cos(elapsed * 0.6) * 10;
+      redLight.intensity = 50 + Math.sin(elapsed * 0.8) * 12;
+      blueLight.intensity = 38 + Math.cos(elapsed * 0.6) * 10;
 
       renderer.render(scene, camera);
     };
@@ -262,11 +369,27 @@ export default function HeroScene() {
     window.addEventListener("resize", handleResize, { passive: true });
 
     return () => {
+      isDisposed = true;
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
+      scene.traverse((node) => {
+        if (node instanceof THREE.Mesh || node instanceof THREE.Points) {
+          node.geometry.dispose();
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          materials.forEach((material) => {
+            Object.values(material).forEach((value) => {
+              if (value instanceof THREE.Texture) {
+                value.dispose();
+              }
+            });
+            material.dispose();
+          });
+        }
+      });
+      envTexture.dispose();
+      pmrem.dispose();
       renderer.dispose();
-      disposables.forEach((resource) => resource.dispose());
       mount.removeChild(renderer.domElement);
     };
   }, []);
