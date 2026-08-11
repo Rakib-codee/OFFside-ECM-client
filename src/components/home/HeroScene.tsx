@@ -7,6 +7,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { isFinePointer, prefersReducedMotion } from "@/lib/motion";
 
 const MODEL_URL = "/models/player/Superhero_Male_FullBody.gltf";
+const KIT_TEXTURE_URL = "/models/player/T_Superhero_Male_Kit.png";
 const PARTICLE_COUNT = 1600;
 const ACCENT = 0xff3b30;
 const ACCENT_ALT = 0x007aff;
@@ -61,10 +62,11 @@ const POSE: Record<string, [number, number, number]> = {
 
 /**
  * Three.js hero: a rigged human athlete (Quaternius "Universal Base
- * Characters", CC0) in a brand-red kit with an OFFSIDE 10 back print,
- * posed and breathing procedurally, lit with ACES tone mapping + room
- * environment for PBR realism, slowly turning inside the particle field.
- * Decorative only — pointer-events: none, aria-hidden.
+ * Characters", CC0) wearing the OFFside kit. The jersey, shorts, socks and
+ * boots are painted into the body's BaseColor texture (generated offline by
+ * classifying every texel's bind-pose position), so the kit follows the
+ * anatomy perfectly from every angle. ACES tone mapping + room environment
+ * for PBR realism. Decorative only — pointer-events: none, aria-hidden.
  */
 export default function HeroScene() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -113,13 +115,12 @@ export default function HeroScene() {
       opacity: 0.55,
       depthWrite: false,
     });
-    const shadowGeometry = new THREE.PlaneGeometry(3.4, 3.4);
-    const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), shadowMaterial);
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = FLOOR_Y + 0.01;
     group.add(shadow);
 
-    /* ---------- The athlete model ---------- */
+    /* ---------- The athlete ---------- */
     const backTexture = makeBackPrintTexture();
     const printMaterial = new THREE.MeshBasicMaterial({
       map: backTexture,
@@ -161,104 +162,38 @@ export default function HeroScene() {
         spineBone = model.getObjectByName("spine_02") ?? null;
         headBone = model.getObjectByName("neck_01") ?? null;
 
-        // Realistic skin stays untouched; just ground its PBR response
+        // Swap the skin texture for the painted OFFside kit; ground the
+        // PBR response of every material
+        const kitTexture = new THREE.TextureLoader().load(KIT_TEXTURE_URL);
+        kitTexture.flipY = false;
+        kitTexture.colorSpace = THREE.SRGBColorSpace;
         model.traverse((node) => {
           if (node instanceof THREE.Mesh && node.material instanceof THREE.MeshStandardMaterial) {
             node.material.envMapIntensity = 0.85;
+            if (node.material.name.includes("Superhero")) {
+              node.material.map = kitTexture;
+              node.material.needsUpdate = true;
+            }
           }
         });
 
-        // Dress the athlete: red jersey, sleeves, collar and dark shorts
-        // built in the model's native units (yAt(f) = f of body height)
-        const nMinY = box.min.y / scale;
         const H = size.y;
+        const nMinY = box.min.y / scale;
         const yAt = (f: number) => nMinY + f * H;
-        const jerseyMaterial = new THREE.MeshStandardMaterial({
-          color: JERSEY_RED,
-          roughness: 0.82,
-          metalness: 0,
-        });
-        const shortsMaterial = new THREE.MeshStandardMaterial({
-          color: 0x14141a,
-          roughness: 0.85,
-          metalness: 0,
-        });
-        const dress = (
-          geometry: THREE.BufferGeometry,
-          material: THREE.MeshStandardMaterial,
-          x: number,
-          y: number,
-          rotZ = 0,
-          depthScale = 0.72,
-        ) => {
-          const piece = new THREE.Mesh(geometry, material);
-          piece.position.set(x, y, 0);
-          piece.rotation.z = rotZ;
-          piece.scale.z = depthScale;
-          model.add(piece);
-          return piece;
-        };
-        // Torso (wide at the shoulders, drops past the hips)
-        dress(new THREE.CylinderGeometry(0.13 * H, 0.11 * H, 0.33 * H, 28), jerseyMaterial, 0, yAt(0.635), 0, 0.8);
-        // Collar
-        dress(new THREE.TorusGeometry(0.055 * H, 0.014 * H, 8, 24), jerseyMaterial, 0, yAt(0.8), 0, 1).rotation.x = Math.PI / 2.2;
-        // Shorts
-        dress(new THREE.CylinderGeometry(0.115 * H, 0.125 * H, 0.13 * H, 28), shortsMaterial, 0, yAt(0.49), 0, 0.8);
 
-        // Sleeves, socks and boots ride ON the bones so they stay fitted
-        // from every turntable angle. Each piece is aligned along its bone
-        // (bone origin at the joint, pointing toward the child joint).
-        model.updateMatrixWorld(true);
-        // Sizes are fractions of the bone's own length (L), so they are
-        // immune to whatever unit scale the skeleton carries.
-        const attachAlong = (
-          boneName: string,
-          towardName: string,
-          makeMesh: (length: number) => THREE.Mesh,
-          t: number,
-          axis: THREE.Vector3,
-        ) => {
-          const bone = model.getObjectByName(boneName);
-          const toward = model.getObjectByName(towardName);
-          if (!bone || !toward) {
-            return;
-          }
-          const dir = bone.worldToLocal(toward.getWorldPosition(new THREE.Vector3()));
-          const mesh = makeMesh(dir.length());
-          mesh.quaternion.setFromUnitVectors(axis, dir.clone().normalize());
-          mesh.position.copy(dir).multiplyScalar(t);
-          bone.add(mesh);
-        };
-        const alongY = new THREE.Vector3(0, 1, 0);
-        const alongZ = new THREE.Vector3(0, 0, 1);
-        for (const side of ["l", "r"] as const) {
-          attachAlong(
-            `upperarm_${side}`,
-            `lowerarm_${side}`,
-            (L) => new THREE.Mesh(new THREE.CylinderGeometry(0.36 * L, 0.27 * L, 0.6 * L, 18), jerseyMaterial),
-            0.17,
-            alongY,
-          );
-          attachAlong(
-            `calf_${side}`,
-            `foot_${side}`,
-            (L) => new THREE.Mesh(new THREE.CylinderGeometry(0.125 * L, 0.14 * L, 0.85 * L, 16), jerseyMaterial),
-            0.5,
-            alongY,
-          );
-          attachAlong(
-            `foot_${side}`,
-            `ball_${side}`,
-            (L) => new THREE.Mesh(new THREE.BoxGeometry(0.55 * L, 0.5 * L, 1.9 * L), shortsMaterial),
-            0.68,
-            alongZ,
-          );
-        }
+        // Collar ring for a sporty neckline
+        const collar = new THREE.Mesh(
+          new THREE.TorusGeometry(0.055 * H, 0.014 * H, 8, 24),
+          new THREE.MeshStandardMaterial({ color: JERSEY_RED, roughness: 0.82, metalness: 0 }),
+        );
+        collar.position.set(0, yAt(0.8), 0);
+        collar.rotation.x = Math.PI / 2.2;
+        model.add(collar);
 
         // OFFSIDE 10 back print, hugging the jersey's back
         const print = new THREE.Mesh(printGeometry, printMaterial);
         print.scale.setScalar(0.235 * H);
-        print.position.set(0, yAt(0.66), -0.105 * H);
+        print.position.set(0, yAt(0.66), -0.095 * H);
         print.rotation.y = Math.PI;
         model.add(print);
 
