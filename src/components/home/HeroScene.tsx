@@ -6,32 +6,14 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { isFinePointer, prefersReducedMotion } from "@/lib/motion";
 
-const MODEL_URL = "/models/player/Superhero_Male_FullBody.gltf";
-const KIT_TEXTURE_URL = "/models/player/T_Superhero_Male_Kit.png";
+// Model: "neymar 3d free football model #free + animation" (https://skfb.ly/oGwZE)
+// by Ltti....................Ttg — CC Attribution 4.0
+const MODEL_URL = "/models/neymar.glb";
 const PARTICLE_COUNT = 1600;
 const ACCENT = 0xff3b30;
 const ACCENT_ALT = 0x007aff;
-const JERSEY_RED = 0xc41230;
 const PLAYER_HEIGHT = 4.3;
 const FLOOR_Y = -2.15;
-
-/** Canvas texture for the back print: OFFSIDE + big number 10. */
-function makeBackPrintTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d")!;
-  ctx.clearRect(0, 0, 512, 512);
-  ctx.fillStyle = "#ffffff";
-  ctx.textAlign = "center";
-  ctx.font = "bold 64px Arial";
-  ctx.fillText("O F F S I D E", 256, 120);
-  ctx.font = "bold 300px Arial";
-  ctx.fillText("10", 256, 430);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.anisotropy = 4;
-  return texture;
-}
 
 /** Soft radial contact shadow with a faint brand-red rim. */
 function makeShadowTexture(): THREE.CanvasTexture {
@@ -48,25 +30,11 @@ function makeShadowTexture(): THREE.CanvasTexture {
   return new THREE.CanvasTexture(canvas);
 }
 
-/** Relaxed athletic stance applied over the bind pose (UE-style bone names). */
-const POSE: Record<string, [number, number, number]> = {
-  upperarm_l: [0.04, 0, -1.28],
-  upperarm_r: [0.04, 0, 1.28],
-  lowerarm_l: [0, 0.25, -0.15],
-  lowerarm_r: [0, -0.25, 0.15],
-  hand_l: [0.1, 0, -0.12],
-  hand_r: [0.1, 0, 0.12],
-  spine_02: [0.04, 0, 0],
-  neck_01: [-0.06, 0, 0],
-};
-
 /**
- * Three.js hero: a rigged human athlete (Quaternius "Universal Base
- * Characters", CC0) wearing the OFFside kit. The jersey, shorts, socks and
- * boots are painted into the body's BaseColor texture (generated offline by
- * classifying every texel's bind-pose position), so the kit follows the
- * anatomy perfectly from every angle. ACES tone mapping + room environment
- * for PBR realism. Decorative only — pointer-events: none, aria-hidden.
+ * Three.js hero: rigged footballer (CC-BY, see MODEL_URL note) playing its
+ * embedded animation on a slow turntable, lit with ACES tone mapping + room
+ * environment, inside the brand particle field. Mouse parallax on fine
+ * pointers; static frame for reduced motion. Decorative only.
  */
 export default function HeroScene() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -120,19 +88,9 @@ export default function HeroScene() {
     shadow.position.y = FLOOR_Y + 0.01;
     group.add(shadow);
 
-    /* ---------- The athlete ---------- */
-    const backTexture = makeBackPrintTexture();
-    const printMaterial = new THREE.MeshBasicMaterial({
-      map: backTexture,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    });
-    const printGeometry = new THREE.PlaneGeometry(1.0, 1.0);
-
+    /* ---------- The footballer ---------- */
     let isDisposed = false;
-    let spineBone: THREE.Object3D | null = null;
-    let headBone: THREE.Object3D | null = null;
+    let mixer: THREE.AnimationMixer | null = null;
     const loader = new GLTFLoader();
     loader.load(
       MODEL_URL,
@@ -142,60 +100,42 @@ export default function HeroScene() {
         }
         const model = gltf.scene;
 
-        // Normalize height and stand the feet on the floor
+        model.traverse((node) => {
+          if (node instanceof THREE.Mesh && node.material instanceof THREE.MeshStandardMaterial) {
+            node.material.envMapIntensity = 0.85;
+          }
+        });
+
+        // Embedded animation (mixamo). Zero the hips' X/Z translation so the
+        // action plays in place instead of wandering off the pedestal.
+        if (gltf.animations.length > 0) {
+          for (const track of gltf.animations[0].tracks) {
+            if (track.name.endsWith(".position") && track.name.includes("Hips")) {
+              for (let i = 0; i < track.values.length; i += 3) {
+                track.values[i] = 0;
+                track.values[i + 2] = 0;
+              }
+            }
+          }
+          mixer = new THREE.AnimationMixer(model);
+          const action = mixer.clipAction(gltf.animations[0]);
+          action.play();
+          mixer.update(0);
+          if (reduced) {
+            mixer = null;
+          }
+        }
+
+        // Normalize height and stand the feet on the floor — measured on the
+        // animated first frame, not the bind pose
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
         const scale = PLAYER_HEIGHT / size.y;
         model.scale.setScalar(scale);
         box.setFromObject(model);
         model.position.y = FLOOR_Y - box.min.y;
-
-        // Relaxed stance over the bind pose
-        for (const [bone, [x, y, z]] of Object.entries(POSE)) {
-          const node = model.getObjectByName(bone);
-          if (node) {
-            node.rotation.x += x;
-            node.rotation.y += y;
-            node.rotation.z += z;
-          }
-        }
-        spineBone = model.getObjectByName("spine_02") ?? null;
-        headBone = model.getObjectByName("neck_01") ?? null;
-
-        // Swap the skin texture for the painted OFFside kit; ground the
-        // PBR response of every material
-        const kitTexture = new THREE.TextureLoader().load(KIT_TEXTURE_URL);
-        kitTexture.flipY = false;
-        kitTexture.colorSpace = THREE.SRGBColorSpace;
-        model.traverse((node) => {
-          if (node instanceof THREE.Mesh && node.material instanceof THREE.MeshStandardMaterial) {
-            node.material.envMapIntensity = 0.85;
-            if (node.material.name.includes("Superhero")) {
-              node.material.map = kitTexture;
-              node.material.needsUpdate = true;
-            }
-          }
-        });
-
-        const H = size.y;
-        const nMinY = box.min.y / scale;
-        const yAt = (f: number) => nMinY + f * H;
-
-        // Collar ring for a sporty neckline
-        const collar = new THREE.Mesh(
-          new THREE.TorusGeometry(0.055 * H, 0.014 * H, 8, 24),
-          new THREE.MeshStandardMaterial({ color: JERSEY_RED, roughness: 0.82, metalness: 0 }),
-        );
-        collar.position.set(0, yAt(0.8), 0);
-        collar.rotation.x = Math.PI / 2.2;
-        model.add(collar);
-
-        // OFFSIDE 10 back print, hugging the jersey's back
-        const print = new THREE.Mesh(printGeometry, printMaterial);
-        print.scale.setScalar(0.235 * H);
-        print.position.set(0, yAt(0.66), -0.095 * H);
-        print.rotation.y = Math.PI;
-        model.add(print);
+        model.position.x = -(box.min.x + box.max.x) / 2;
+        model.position.z = -(box.min.z + box.max.z) / 2;
 
         player.add(model);
         if (reduced) {
@@ -257,17 +197,14 @@ export default function HeroScene() {
     const clock = new THREE.Clock();
     let frame = 0;
     const renderFrame = () => {
-      const elapsed = clock.getElapsedTime();
+      const delta = clock.getDelta();
+      const elapsed = clock.elapsedTime;
 
-      // Slow turntable + breathing idle
-      player.rotation.y = elapsed * 0.35;
-      player.position.y = Math.sin(elapsed * 1.5) * 0.025;
-      if (spineBone) {
-        spineBone.rotation.x += Math.sin(elapsed * 1.5) * 0.0009;
+      if (mixer) {
+        mixer.update(delta);
       }
-      if (headBone) {
-        headBone.rotation.y = Math.sin(elapsed * 0.4) * 0.12;
-      }
+      // Slow turntable
+      player.rotation.y = elapsed * 0.3;
 
       particles.rotation.y = elapsed * 0.02;
       shadowMaterial.opacity = 0.5 + Math.sin(elapsed * 1.5) * 0.05;
@@ -308,6 +245,7 @@ export default function HeroScene() {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
+      mixer?.stopAllAction();
       scene.traverse((node) => {
         if (node instanceof THREE.Mesh || node instanceof THREE.Points) {
           node.geometry.dispose();
